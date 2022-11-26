@@ -418,7 +418,6 @@ int main(int argc, char **argv)
 			//printf("Nbranches: %d\n", nbranch_tree);
 		//
 			double masses[nbranch_tree+1];
-//			double mass_sums[nbranch_tree+1];
 			double redshifts[nbranch_tree+1];
 			int imw = 0;
 			double M_out;
@@ -525,12 +524,6 @@ int main(int argc, char **argv)
 					imw_sats[ibranch]++;
 
 					M_host[ibranch] = m2;
-
-				
-					/*
-					redshifts_sat[ibranch][0] = histdata.zap;
-					masses_sat[ibranch][0] = min_hmass;
-					*/
 				}
 				
 				
@@ -584,11 +577,11 @@ int main(int argc, char **argv)
 				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out, log10(sfr));
 				}
 				}
-				}
 			}
 			
 			start=clock();
 			
+			// Compute sfr for satellites
 			if (log10(M_out) > 10)
 			{
 				fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
@@ -599,53 +592,23 @@ int main(int argc, char **argv)
 				double *masses_sat1 = masses_sat[ibranch];
 
 				
-				//if ((nmw_sat > 1) && (log10(masses_sat1[nmw_sat-1]) > 9))
-				if (nmw_sat > 1) 
+				if ((nmw_sat > 1) && (log10(masses_sat1[nmw_sat-1]) > 9))
 				{
 					double z_infall = redshifts_sat1[nmw_sat-1];
 					double M_infall = masses_sat1[nmw_sat-1];
 					//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
 					double tdyn = t_dyn(cosm, z_infall);
-					double Om = omega_m(cosm, z_infall);
-					double Ol = 1 - Om;
-					double gz = (5.0/2.0) * Om / (pow(Om, 4.0/7.0) - Ol + (1 + Om/2)*(1 + Ol/70)); 
-					double Dz = gz / (1+z_infall);
-					double Om_0 = omega_m(cosm, 0);
-					double gz_0 = (5.0/2.0) * cosm.omega / (pow(cosm.omega, 4.0/7.0) - cosm.omega + (1 + Om_0/2)*(1 + cosm.lambda/70)); 
-					double Dz_0 = gz_0 / (1);
-					Dz = Dz/Dz_0;
-//					printf("Dz: %lf\n", Dz);
-					double A = 0.195 * pow(Dz/0.6,2);
-					double b = 0.92 * Dz;
-					double c = 1.9;
-					double eta = 1;
-					double Mhost = M_host[ibranch];
-//					printf("Mhost: %lf\n", log10(Mhost));
-					double tau_merger = A * tdyn * pow(Mhost/M_infall,b) * exp(c * eta) / log(1 + Mhost/M_infall);
 
-
-
-//					printf("%lf\n", M_infall/Mhost);
-//					printf("tau_merger:%g\n", tau_merger/1e9);
 					double t_merge = my_z2t(z_infall, cosm);
 					double t1_sat = t_merge - tdyn;
 					double z1_sat = my_t2z(t1_sat, cosm);
-//					printf("z1=%lf\n", z1);
 					//printf("tdyn=%lf\n", tdyn/1E9);
 
 					double t = tout - t_merge;
 					double t_Gyr = t/1E9;
 					//printf("t=%lf Gyr\n", t/1E9);
-					//printf("M=%lf\n", log10(masses_sat1[nmw_sat-1]));
-					//printf("mhalo: %lf\n", log10(masses_sat1[nmw_sat-1]));
-					double t3_Gyr = 2 * pow(1+z_infall, -3.0/2.0);
-
-//					printf("t3: %lf\n", t3_Gyr);
-					double t3 = t3_Gyr*1E9;
-					if (z1_sat < 6.0 && z1_sat < redshifts_sat1[0])// && t < tau_merger)
+					if (z1_sat < 6.0 && z1_sat < redshifts_sat1[0])
 					{
-//					printf("t=%lf Gyr\n", t/1E9);
-//						printf("t3: %lf\n", t3_Gyr);
 						int index1;
 						for (int iz=0; iz < nmw_sat; iz++)
 						{
@@ -662,14 +625,13 @@ int main(int argc, char **argv)
 							}
 						}
 
+						double logM_infall = log10(M_infall);
+
 						Md = M_dyn(masses_sat1, redshifts_sat1, index1, z1_sat, equals);
-						//double Mpseudo = M_pseudo(cosm, Md, z1_sat, z_infall, cubic_set, n_table, table_x, table_y, mass_bins, z_bins, conc_arr);
 						double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
 
 
-						//printf("term1: %lf\n", dM_dt_dyn);
-						//
-						double logM_infall = log10(M_infall);
+
 						double c179 = conc_ishiyama(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
 						double Delta179 = 179;
 						double x = omega_m(cosm, z_infall) - 1;
@@ -686,83 +648,16 @@ int main(int argc, char **argv)
 						double dM_dt = dM_dt_dyn - term2; // [Msun/yr]
 
 
-						//printf("dM_dt: %lf\n", dM_dt);
 						double f_b = cosm.omegab / cosm.omega;
 						double dmb_dt = f_b * dM_dt;
 						double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
 						double sfr_sat = dmb_dt * e;
 												
-						//printf("sfr_sat: %g\n", sfr_sat);
-						
-						double Mstar = sfr2mstar(cosm, sfr_sat, z_infall); //[Msun]
-						//printf("Mstar: %g\n", Mstar);
+					
+						double t_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 
-						Mstar = mhalo2mstar(cosm, M_infall, z_infall);
-						double frac = sfr_sat;
-//						printf("Mstar: %g\n", Mstar);
-						//printf("frac: %g\n", frac);
-						//t3 /= frac;
-						//printf("t3: %g\n", t3/1e9);
-
-
-						//printf("%lf\n", f_b);
-						double ssfr = sfr_sat / Mstar;
-						double f_s = 0.03;
-						double f_strip = 0;
-						double eta1 = 2.5;
-						double R = 0.4;
-
-						double T_delay = (f_b - f_s*((0.1 * pow(1+z_infall,2)) + (eta1 * (1+R)) + 1) - f_strip)/(f_s * (1 - R + eta1) * ssfr);
-//						printf("ssfr: %g\n", ssfr);
-						double T_delay_Gyr = T_delay/1e9;
-						//printf("z_infall: %lf\n", z_infall);
-						//printf("T_delay: %g\n", T_delay_Gyr);
-						t3 = T_delay;
-						t3_Gyr = T_delay_Gyr;
-						//double t_fade = 4 * pow(1 + z_infall, -3/2);
-						//printf("T_delay: %g\n", T_delay_Gyr);
-						double t_fade = 0.5;
-
-						Mstar = pow(10,10.5);
-						double a = 0.7 - 0.13*z_infall;
-						double b = 0.38 + 1.14*z_infall - 0.19*z_infall*z_infall;
-						double logsfr = a * (log10(Mstar) - 10.5) + b;
-						double z0 = 0.05;
-						double a0 = 0.7 - 0.13*z0;
-						double b0 = 0.38 + 1.14*z0 - 0.19*z0*z0;
-	
-						double logsfr0 = a0 * (log10(Mstar) - 10.5) + b0;
-						double t_quench = 4.4 * pow(10, logsfr0) / pow(10, logsfr);
-						t_quench = 1.7*pow(1+zout, -3.0/2.0);
-
-						/*
-						printf("sfr1: %lf\n", pow(10,logsfr));
-						printf("sfr_sat: %lf\n", sfr_sat);
-						printf("t: %g\n", 4.4*pow(10,logsfr0)/pow(10,logsfr));
-						*/
-
-						
-						//if (t > t3)
-						{
-						//sfr_sat *= exp(-(t_Gyr-t3_Gyr)/0.25);
 						sfr_sat *= exp(-(t_Gyr)/t_quench);
-						}
-						
-						if (log10(sfr_sat) > -1)
-						{
-						//fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr_sat));
-						//printf("%lf %g\n", log10(M_out), log10(sfr_sat));
-						}
-						if (sfr_sat > 0)
-						{
-						//double log_lum_sat = (log10(sfr_sat*chabrier_factor) + log_eta_ha)/e_ha;
-						//log_lum_sat = log10(sfr_sat/(4.4 *pow(10,-42)));
-//						fprintf(fp_sfr_sat, "%g\n", log_lum_sat);
-						}
 
-						//printf("t: %lf\n", t_Gyr);
-						//printf("t3: %lf\n", t3_Gyr);
-					//	printf("sfr: %lf\n", log10(sfr_sat));
 						if (sfr_sat> 0) sfr += sfr_sat;
 					}
 

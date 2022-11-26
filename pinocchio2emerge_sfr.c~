@@ -81,25 +81,25 @@ int main(int argc, char **argv)
 	int irun = 22;
 //	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
-	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
+//	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
 
 //	double pmass = 2.59293 * 1e7; // N1500 100 Mpc/h
 //	double pmass = 3.3383 * 1e8; // N1600 250 Mpc/h (z=0.4)
 
-	//double pmass = 1.59183 * 1e8; // N4096 500 Mpc/h (z=1.5)
+	double pmass = 1.59183 * 1e8; // N4096 500 Mpc/h (z=1.5)
 
 //	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
 
 
 //	double min_part = 10;
-	double min_part = 8;
-//	double min_part = 32;
+//	double min_part = 8;
+	double min_part = 32;
 
 	double min_hmass = pmass*min_part; 
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 1.47;
+	double zout = 1.5;
 	
 	double tdyn = t_dyn(cosm, zout);
 	printf("tdyn: %g years\n", tdyn);
@@ -112,39 +112,57 @@ int main(int argc, char **argv)
 	double z1 = my_t2z(t1, cosm);
 	printf("z(tout - tdyn): %lf\n", z1);
 
-	char runname[64], filename[128];
+	char runname[16], filename[256];
 
-	sprintf(runname, "r000%d", irun);
-//	sprintf(runname, "test8");
+//	sprintf(runname, "r000%d", irun);
+	sprintf(runname, "test32");
 
+
+//	char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1750";
+	char cat_dir[128] = "/mnt/data_cat4/moriwaki";
 
 	FILE *fp_cat;
 	char fname_cat[64];
 
-	sprintf(fname_cat, "pinocchio.%.1f000.%s.catalog.out", z, runname);
+	sprintf(fname_cat, "%s/pinocchio.%.1f000.%s.catalog.out", cat_dir, zout, runname);
 	printf("Opening file %s\n",fname_cat);
 
-	fp1 = fopen(fname_cat, "r");
-	if (fp1==NULL)
+	fp_cat = fopen(fname_cat, "r");
+	if (fp_cat==NULL)
 	{
 		fprintf(stderr, "cannot open file: %s\n", fname_cat);
 		exit(1);
 	}
 
 
-	int dummy, ninhead, NSlices, nproc;
+	int dummy_cat, ninhead, NSlices_cat, nproc;
 
-	int u = fread(&ninhead, sizeof(int),1,fp1);
+	int u_cat = fread(&ninhead, sizeof(int),1,fp_cat);
 	ninhead /= sizeof(int);
-	u = fread(&nproc, sizeof(int), 1, fp1);
+	u_cat = fread(&nproc, sizeof(int), 1, fp_cat);
 	if (ninhead==2)
-		u = fread(&NSlices, sizeof(int), 1, fp1);
-	u = fread(&dummy, sizeof(int), 1, fp1);
+		u_cat = fread(&NSlices_cat, sizeof(int), 1, fp_cat);
+	u_cat = fread(&dummy_cat, sizeof(int), 1, fp_cat);
 	printf("The file has been written by %d tasks\n", nproc);
 	if (ninhead==2)
-		printf("The box has been fragmented in %d slices\n",NSlices);
+		printf("The box has been fragmented in %d slices\n",NSlices_cat);
 	else
 		printf("This old version catalog does not give the number of slices used\n");
+
+	
+	int arrlen = 100000;
+
+	unsigned long long int *groupids; //8 bytes
+	groupids = (unsigned long long int*) malloc(arrlen*sizeof(unsigned long long int));
+	double *mass_cat;
+	mass_cat = (double*) malloc(arrlen*sizeof(double));
+	double **pos;
+	pos = (double**) malloc(3 * sizeof(double*));
+	for (int i = 0; i < 3; i++)
+	{
+		pos[i] = (double*) malloc(arrlen*sizeof(double));
+	}
+
 
 	int nblocks = 0;
 	int ngood, igood;
@@ -154,30 +172,28 @@ int main(int argc, char **argv)
 
 	while (1)
 	{
-		if (!fread(&dummy, sizeof(int), 1, fp1))// determines number of bytes of cat; if 0 bytes then at end of file and !0 = 1 
+		if (!fread(&dummy_cat, sizeof(int), 1, fp_cat))// determines number of bytes of cat; if 0 bytes then at end of file and !0 = 1 
 			break;
 			
 				
 		++nblocks;
-		u = fread(&ngood,sizeof(int),1,fp1);
-		u = fread(&dummy,sizeof(int),1,fp1); 
+		u_cat = fread(&ngood,sizeof(int),1,fp_cat);
+		u_cat = fread(&dummy_cat,sizeof(int),1,fp_cat); 
 		n+=ngood;
-		printf("  found %d halos in block N. %d\n",ngood,nblocks);
+		//printf("  found %d halos in block N. %d\n",ngood,nblocks);
 
 		if (n > arrlen)
 		{
 			arrlen = n;
-			mass = realloc(mass, arrlen * sizeof(double));
-			for (int line = 0; line < NLINES; line++)
-			{
-				L_lines[line] = realloc(L_lines[line], arrlen * sizeof(double));
-			}
+			groupids = realloc(groupids, arrlen * sizeof(unsigned long long int));
+			mass_cat = realloc(mass_cat, arrlen * sizeof(double));
+	
 			for (int i = 0; i < 3; i++)
 			{
 				pos[i] = realloc(pos[i], arrlen * sizeof(double));
 			}
 
-			if (!mass)
+			if (!groupids)
 			{
 				fprintf(stderr, "Can't realloc\n");
 				exit(1);
@@ -186,27 +202,30 @@ int main(int argc, char **argv)
 		
 		for (igood=0; igood<ngood; igood++)
 		{
-			u=fread(&dummy,sizeof(int),1,fp1);
-			u=fread(&catdata,dummy,1,fp1);
-			u=fread(&dummy,sizeof(int),1,fp1);
+			u_cat=fread(&dummy_cat,sizeof(int),1,fp_cat);
+			u_cat=fread(&catdata,dummy_cat,1,fp_cat);
+			u_cat=fread(&dummy_cat,sizeof(int),1,fp_cat);
 
 
 			for (int i=0; i < 3; i++)
 			{
 				pos[i][nhalo] = catdata.x[i];
 			}
-			mass[nhalo] = catdata.M;
-			mass[nhalo] = log10(mass[nhalo]/0.6736);
+			mass_cat[nhalo] = catdata.M;
+			mass_cat[nhalo] = log10(mass_cat[nhalo]);
+
+			groupids[nhalo] = catdata.id;
 
 			nhalo++;
 		}
 	}
-	fclose(fp1);
+	fclose(fp_cat);
+	printf("nhalo in cat: %d\n", nhalo);
 
 	FILE *fp;
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1750";
-//	char dir[128] = "/mnt/data_cat4/moriwaki";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1750";
+	char dir[128] = "/mnt/data_cat4/moriwaki";
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
 	printf("Opening file %s\n", filename);
 
@@ -233,30 +252,34 @@ int main(int argc, char **argv)
 
 	int First = 1;
 
-	FILE *fp_test;
-	sprintf(filename, "mass_hist.txt");
-	fp_test = fopen(filename, "w");
-
-//	fprintf(fp_test, "#redshift mass\n");
 
 	FILE *fp_sfr;
-	char fname_sfr[64];
+	char fname_sfr[32];
 	sprintf(fname_sfr, "mass-sfr.txt");
 	fp_sfr = fopen(fname_sfr, "w");
-
+	if (fp_sfr==NULL)
+	{
+		fprintf(stderr, "cannot open file: %s\n", fname_sfr);
+		exit(1);
+	}
 	fprintf(fp_sfr, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
 
+
 	FILE *fp_sfr_sat;
-	char fname_sfr_sat[64];
+	char fname_sfr_sat[32];
 	sprintf(fname_sfr_sat, "mass-sfr-sat.txt");
 	fp_sfr_sat = fopen(fname_sfr_sat, "w");
 
+	if (fp_sfr_sat==NULL)
+	{
+		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sat);
+		exit(1);
+	}
 
 	fprintf(fp_sfr_sat, "# satellites\n");
 	fprintf(fp_sfr_sat, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
-	FILE *fp_pseudo;
 	
 	double mhalo_now;
 
@@ -390,7 +413,6 @@ int main(int argc, char **argv)
 			u = fread(&nbranch_tree, sizeof(int), 1, fp);
 			u = fread(&dummy, sizeof(int), 1, fp);
 			
-//			fprintf(fp_test, "# itree = %d\n", itree);
 
 			//printf("Tree: %d\n", thistree);
 			//printf("Nbranches: %d\n", nbranch_tree);
@@ -443,8 +465,7 @@ int main(int argc, char **argv)
 				if (ibranch == 0)
 				{
 					M_out = m1;
-//					fprintf(fp_test, "%lf %lf\n", zout, log10(m1));
-//
+					unsigned long long int id = histdata.name;
 				}
 				else if (mw == nbranch_tree) //merged with main halo
 				{
@@ -481,7 +502,6 @@ int main(int argc, char **argv)
 						found = 1;
 						if (imw == 0) index = 0; //underestimates dynamical time
 					}
-//					fprintf(fp_test, "%lf %lf\n", zmerger, log10(mass_sum));
 					
 					if (log10(M_out) > 10)
 					{
@@ -637,10 +657,11 @@ int main(int argc, char **argv)
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
 //				log_lum_cent = log10(sfr/(4.4 *pow(10,-42)));
 				//printf("%lf\n", log_lum_cent);
-				if (log10(M_out) > 9)
+				if (log10(M_out) > 9 && sfr > 0)
 				{
 //				fprintf(fp_sfr, "%lf %lf\n", log10(M_out), log_lum_cent);
-				fprintf(fp_sfr, "%lf %lf\n", log10(M_out), log10(sfr));
+//				printf("pos
+				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out, log10(sfr));
 			//	fprintf(fp_sfr, "%lf %lf\n", log10(M_out), dM_dt);
 				}
 				}
@@ -820,7 +841,7 @@ int main(int argc, char **argv)
 						
 						if (log10(sfr_sat) > -1)
 						{
-						fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr_sat));
+						//fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr_sat));
 						//printf("%lf %g\n", log10(M_out), log10(sfr_sat));
 						}
 						if (sfr_sat > 0)
@@ -838,7 +859,7 @@ int main(int argc, char **argv)
 
 				}
 			}
-			//fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr));
+			fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr));
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
@@ -853,7 +874,6 @@ int main(int argc, char **argv)
 
 	fclose(fp);
 
-	fclose(fp_test);
 	fclose(fp_sfr);
 	fclose(fp_sfr_sat);
 

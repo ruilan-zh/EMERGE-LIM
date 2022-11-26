@@ -477,14 +477,6 @@ int main(int argc, char **argv)
 					
 					redshifts[imw] = zmerger;
 					masses[imw] = m2;
-					//mass_sums[imw] = mass_sum;
-					/*
-					imw++;
-					redshifts[imw] = zmerger;
-					masses[imw] = mass_sum;
-					*/
-					//masses[imw] = m2;
-
 					
 					// if found = 1 then already have redshift bin so don't need to execute if statements
 					if (z1 == redshifts[imw] && found == 0)
@@ -554,29 +546,15 @@ int main(int argc, char **argv)
 			double sfr = 0;
 			if (mw_none == 0)
 			{
-				if (redshifts[0] > z1)
+				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
 				{
+				double logM_out = log10(M_out);
+
 				Md = M_dyn(masses, redshifts, index, z1, equals);
 
-				/*
-				Md = masses[imw-1];
-				double t = my_z2t(redshifts[imw-1],cosm);
-				tdyn = tout - t;
-				*/
-
-				//if (Md > 1E10)
-				{
-//				printf("Mout: %lf\n", log10(M_out));
-				/*
-				printf("Md: %lf\n", log10(Md));
-				printf("Mpseudo: %lf\n", M_pseudo);
-				*/
-
-//				printf("Mpseudo_vir: %lf\n", log10(Mpseudo_vir));
 				double dM_dt_dyn = (M_out - Md)/cosm.hubble/tdyn; 
-				//printf("term1: %lf\n", dM_dt_dyn);
-				//
-				double logM_out = log10(M_out);
+
+				// convert concentration to Bryan and Norman virial concentration
 				double c179 = conc_ishiyama(logM_out, zout, mass_bins, z_bins, conc_arr);
 				double Delta179 = 179;
 				double x = omega_m(cosm, zout) - 1;
@@ -587,69 +565,13 @@ int main(int argc, char **argv)
 				double r_vir_out = rvir_from_mvir(cosm, M_out, zout);
 				double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
 				double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
-//				r_vir_d = rvir_from_mvir(cosm, masses[imw-1], redshifts[imw-1]); //[cm]
 
-
-				/*
-				double dR=0;
-				for (int i = index+1; i < imw; i++)
-				{
-					double z_a = redshifts[i];
-					double r_vir_a = rvir_from_mvir(cosm, masses[i], redshifts[i]);
-					double r_vir_b = rvir_from_mvir(cosm, masses[i+1], redshifts[i+1]);
-			
-					double logM_a = log10(masses[i]);
-					c179 = conc_ishiyama(logM_a,redshifts[i] , mass_bins, z_bins, conc_arr);
-					Delta179 = 179;
-					x = omega_m(cosm, redshifts[i]) - 1;
-					Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-					Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z_a);
-					cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_a, z_a, cubic_set, n_table, table_x, table_y);
-					double rho_vir_a = rho_nfw(cosm, cBN, masses[i], r_vir_a, r_vir_a); // [g/cm3] // depends on conc-mass relation
-
-					dR += (r_vir_b - r_vir_a)*r_vir_b*r_vir_b*rho_vir_a;
-				}
-				*/
-
-				/*
-				double logMd = log10(Md);
-				c179 = conc_ishiyama(logMd, z1, mass_bins, z_bins, conc_arr);
-				Delta179 = 179;
-				x = omega_m(cosm, z1) - 1;
-				Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-				Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z1);
-				cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z1, z1, cubic_set, n_table, table_x, table_y);
-				double rho_vir_d = rho_nfw(cosm, cBN, Md, r_vir_d, r_vir_d); // [g/cm3] // depends on conc-mass relation
-				printf("rho_vir_out: %g\n", rho_vir_out);
-				printf("rho_vir_d: %g\n", rho_vir_d);
-				*/
-				/*
-				printf("mass_sum: %lf\n", log10(mass_sums[imw-1]));
-				printf("m2: %lf\n", log10(masses[imw-1]));
-				*/
-
-				/*
-				printf("zmerger: %lf\n", redshifts[imw-1]);
-				printf("mass_sum: %lf\n", log10(masses[imw-1]));
-				printf("mass_out: %lf\n", log10(masses[imw]));
-				printf("r_merge: %lf\n", r_vir_d/kpc);
-				printf("r_out: %lf\n", log10(r_vir_out));
-				*/
 				
 				double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
 				double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
-//				double term2 = 4 * M_PI * r_vir_d*r_vir_d * rho_vir_d * dR_dt_dyn / Msun;  
 
 				double dM_dt = dM_dt_dyn - term2;
-				/*
-				if ((M_out - mass_sums[imw-1])/tdyn < term2)
-				{
-					dM_dt = (mass_sums[imw-1] - masses[imw-1])/tdyn;
-				}
-				*/
-//				if (dM_dt < 0) dM_dt = dM_dt_dyn - term2*0.8;
-//				printf("term2: %lf\n", term2);
-//				printf("dM_dt: %lf\n", dM_dt);
+
 				double f_b = cosm.omegab / cosm.omega;
 				double dmb_dt = f_b * dM_dt;
 				double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
@@ -659,26 +581,13 @@ int main(int argc, char **argv)
 				//printf("%lf\n", log_lum_cent);
 				if (log10(M_out) > 9 && sfr > 0)
 				{
-//				fprintf(fp_sfr, "%lf %lf\n", log10(M_out), log_lum_cent);
-//				printf("pos
 				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out, log10(sfr));
-			//	fprintf(fp_sfr, "%lf %lf\n", log10(M_out), dM_dt);
 				}
 				}
 				}
 			}
-			
-			else
-			{
-				if (log10(M_out) > 9)
-				{
-			//	fprintf(fp_sfr, "%lf -inf\n", log10(M_out));
-				}
-			}
-			
 			
 			start=clock();
-			//printf("M_out: %lf\n", log10(M_out));
 			
 			if (log10(M_out) > 10)
 			{

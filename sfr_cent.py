@@ -3,7 +3,7 @@ import time
 
 start_time = time.time()
 
-masses, sfrs = np.loadtxt("mass-sfr-sat.txt", unpack=True)
+masses, sfrs = np.loadtxt("mass-sfr-sum.txt", unpack=True)
 
 dM = 0.2
 mass_bins = np.arange(8, 15, dM)

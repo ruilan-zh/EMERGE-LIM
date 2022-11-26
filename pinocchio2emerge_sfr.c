@@ -93,8 +93,8 @@ int main(int argc, char **argv)
 
 
 //	double min_part = 10;
-//	double min_part = 8;
-	double min_part = 32;
+	double min_part = 8;
+//	double min_part = 32;
 
 	double min_hmass = pmass*min_part; 
 	printf("Min halo mass: %lf\n", log10(min_hmass));
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	char runname[16], filename[256];
 
 //	sprintf(runname, "r000%d", irun);
-	sprintf(runname, "test32");
+	sprintf(runname, "test8");
 
 
 //	char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1750";
@@ -280,7 +280,21 @@ int main(int argc, char **argv)
 	fprintf(fp_sfr_sat, "# satellites\n");
 	fprintf(fp_sfr_sat, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
-	
+	FILE *fp_sfr_sum;
+	char fname_sfr_sum[32];
+	sprintf(fname_sfr_sum, "mass-sfr-sum.txt");
+	fp_sfr_sum = fopen(fname_sfr_sum, "w");
+
+	if (fp_sfr_sum==NULL)
+	{
+		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sum);
+		exit(1);
+	}
+
+	fprintf(fp_sfr_sum, "# satellites\n");
+	fprintf(fp_sfr_sum, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
+
+
 	double mhalo_now;
 
 	int n_table = 999;
@@ -586,8 +600,10 @@ int main(int argc, char **argv)
 			start=clock();
 			
 			// Compute sfr for satellites
-			if (log10(M_out) > 12)
+			if (log10(M_out) > 11.5)
 			{
+				double t_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+				//printf("t_quench: %lf\n", t_quench);
 				//fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 			{
@@ -609,8 +625,10 @@ int main(int argc, char **argv)
 					//printf("tdyn=%lf\n", tdyn/1E9);
 
 					double t = tout - t_merge;
+
 					double t_Gyr = t/1E9;
-					//printf("t=%lf Gyr\n", t/1E9);
+
+					//printf("t=%lf Gyr\n", t_Gyr);
 					if (z1_sat < 6.0 && z1_sat < redshifts_sat1[0])
 					{
 						int index1;
@@ -656,9 +674,12 @@ int main(int argc, char **argv)
 						double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
 						double sfr_sat = dmb_dt * e;
 					
-						double t_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 
 						sfr_sat *= exp(-(t_Gyr)/t_quench);
+						double logsfr_sat = log10(sfr_sat);
+
+						if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), logsfr_sat);
+						//printf("sfr: %lf\n", logsfr_sat);
 
 						if (sfr_sat> 0) sfr += sfr_sat;
 					}
@@ -672,7 +693,7 @@ int main(int argc, char **argv)
 			if (sfr > 0) 
 			{
 				double logsfr = log10(sfr);
-				if (logsfr > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr));
+				if (logsfr > -1) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));
 			}
 		
 			
@@ -686,6 +707,7 @@ int main(int argc, char **argv)
 
 	fclose(fp_sfr);
 	fclose(fp_sfr_sat);
+	fclose(fp_sfr_sum);
 
 	time(&now);
 	printf("%s\n", ctime(&now));

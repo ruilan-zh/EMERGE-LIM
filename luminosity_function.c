@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
 		int k = 0;
 
 		int count_cent = 0;
+		/*
 		while(fgets(str, 256, fp) != NULL)
 		{
 			if (i == arrlen)
@@ -156,7 +157,7 @@ int main(int argc, char *argv[])
 			if (str[0] == '#') continue;
 			else
 			{
-				sscanf(str, "%*lf %lf ", &L_lines_all[0][i] );
+				sscanf(str, "%*lf %*s %*s %*s %*s %*s %lf ", &L_lines_all[0][i] );
 				if (isnan(L_lines_all[iline][i]) == 0 && isinf(L_lines_all[iline][i]) == 0)
 				{
 				L_lines[iline][j] = L_lines_all[iline][i];
@@ -168,6 +169,7 @@ int main(int argc, char *argv[])
 			}
 			k++;
 		}
+		*/
 		fclose(fp);
 		printf("%d\n", k);
 	

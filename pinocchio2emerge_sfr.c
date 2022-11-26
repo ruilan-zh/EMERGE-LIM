@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr);
 		exit(1);
 	}
-	fprintf(fp_sfr, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
+	fprintf(fp_sfr, "# log10(mass[Msun/h]) x[Mpc/h] y[Mpc/h] z[Mpc/h] conc rvir[Mpc/h] log10(sfr[Msun/yr])\n");
 
 
 
@@ -425,7 +425,6 @@ int main(int argc, char **argv)
 			int index = -1;
 			int found = 0;
 			int mw_none = 1;
-			int zmin_ok = 0;
 			int mw_main[nbranch_tree];
 
 			int *imw_sats;
@@ -465,6 +464,11 @@ int main(int argc, char **argv)
 				{
 					M_out = m1;
 					unsigned long long int id = histdata.name;
+					if (id != groupids[itree]) 
+					{
+						fprintf(stderr, "%lld != %lld for itree = %d", id, groupids[itree], itree);
+						exit(1);
+					}
 				}
 				else if (mw == nbranch_tree) //merged with main halo
 				{
@@ -572,9 +576,9 @@ int main(int argc, char **argv)
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
 //				log_lum_cent = log10(sfr/(4.4 *pow(10,-42)));
 				//printf("%lf\n", log_lum_cent);
-				if (log10(M_out) > 9 && sfr > 0)
+				if (log10(M_out) > 10 && sfr > 0)
 				{
-				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out, log10(sfr));
+				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
 				}
 			}
@@ -582,9 +586,9 @@ int main(int argc, char **argv)
 			start=clock();
 			
 			// Compute sfr for satellites
-			if (log10(M_out) > 10)
+			if (log10(M_out) > 12)
 			{
-				fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
+				//fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 			{
 				int nmw_sat = imw_sats[ibranch];
@@ -592,7 +596,7 @@ int main(int argc, char **argv)
 				double *masses_sat1 = masses_sat[ibranch];
 
 				
-				if ((nmw_sat > 1) && (log10(masses_sat1[nmw_sat-1]) > 9))
+				if ((nmw_sat > 1) && (log10(masses_sat1[nmw_sat-1]) > 10))
 				{
 					double z_infall = redshifts_sat1[nmw_sat-1];
 					double M_infall = masses_sat1[nmw_sat-1];
@@ -631,7 +635,6 @@ int main(int argc, char **argv)
 						double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
 
 
-
 						double c179 = conc_ishiyama(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
 						double Delta179 = 179;
 						double x = omega_m(cosm, z_infall) - 1;
@@ -652,7 +655,6 @@ int main(int argc, char **argv)
 						double dmb_dt = f_b * dM_dt;
 						double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
 						double sfr_sat = dmb_dt * e;
-												
 					
 						double t_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 
@@ -663,10 +665,14 @@ int main(int argc, char **argv)
 
 				}
 			}
-			fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr));
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
+			}
+			if (sfr > 0) 
+			{
+				double logsfr = log10(sfr);
+				if (logsfr > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), log10(sfr));
 			}
 		
 			

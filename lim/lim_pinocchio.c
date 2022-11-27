@@ -1,0 +1,391 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <float.h>
+#include <fftw3.h>
+#include <sys/stat.h>
+#include <time.h>
+
+#include "constant.h"
+#include "para.h"
+#include "proto.h"
+
+#define NPIX_NFW 3
+
+#define NLINES 1
+
+int main(int argc, char *argv[])
+{
+	time_t now;
+	time(&now);
+	printf("%s\n", ctime(&now));
+
+
+    Cosmology cosm;
+    cosm.omega = 0.3153;
+    cosm.lambda = 0.6847;
+    cosm.omegab = 0.0493;
+    cosm.hubble = 0.6736;
+
+	
+	if (argc != 6)
+	{
+		fprintf(stderr, "ERROR: incorrect number of arguments to %s\n", argv[0]);
+		fprintf(stderr, "	Input: ");
+		for(int i = 0; i < argc; i++) fprintf(stderr, "%s ", argv[i]);
+		fprintf(stderr, "\n");
+		fprintf(stderr, "	Usage: %s lambda_obs I_sigma boxsize pixlen dir\n", argv[0]);
+
+		exit(1);
+	}
+
+	char *linenames[NLINES] = {"Ha", "OIII", "OII"};
+	double lambda_rest_Ha = 6563 * Angstrom;
+	double lambda_rest_O3 = 5007 * Angstrom;
+	double lambda_rest_O2 = 3727 * Angstrom;
+	double lambda_rest[NLINES] = {lambda_rest_Ha, lambda_rest_O3, lambda_rest_O2};
+
+
+	double lambda_obs = atof(argv[1]) * 10000 * Angstrom;
+	double nu_obs = cspeed/lambda_obs;
+
+	double redshifts[NLINES];
+	for (int iline = 0; iline < NLINES; iline++)
+	{
+		redshifts[iline] = lambda_obs/lambda_rest[iline] - 1;
+	}
+
+	double extinction[NLINES] = {1.0, 1.35, 1.0};
+
+	double R = 41; //spectral resolution
+
+	double z0 = 1.47;
+
+	double boxsize_mpc_h = atof(argv[3]); // [cMpc/h]
+//	double boxsize_mpc_h = boxsize_mpc * cosm.hubble;
+	double boxsize_mpc = boxsize_mpc_h / cosm.hubble;
+	double boxsize_cm = boxsize_mpc * (mpc); // [cm]
+	double d_A = angular_distance(cosm, z0); // [cm]
+	double boxsize_rad = boxsize_cm / (d_A * (1+z0)); // [deg]
+	double boxsize_deg = boxsize_rad / (2 * M_PI / 360);
+
+
+	double angular_resolution_sphereX = 6.2; //arcsec
+	double res = atof(argv[4]); //arcsec
+	double pixlen = res / (60 * 60); //degrees
+	double pixlen_rad = pixlen * 2 * M_PI / 360;
+	double pixlen_cm = pixlen_rad * (d_A * (1+z0));
+	double pixlen_mpc = pixlen_cm / (mpc);
+	double pixlen_mpc_h = pixlen_mpc * cosm.hubble; 
+
+	printf("boxsize in Mpc: %lf\n", boxsize_mpc);
+	printf("catalogue boxsize in Mpc/h: %lf\n", boxsize_mpc_h);
+//	printf("boxsize in degrees: %lf\n", boxsize_deg);
+	printf("pixel length in arcsec: %lf\n", res);
+//	printf("pixel length in degrees: %lf\n", pixlen);
+
+	int Nmeshxy = boxsize_mpc_h/pixlen_mpc_h;
+	printf("Nmeshxy: %d\n", Nmeshxy);
+	int Nmeshz = 1;
+	int Nmeshtot = Nmeshxy*Nmeshxy*Nmeshz;
+	double pixsize = pixlen*pixlen; //degrees^2
+	pixsize = pixsize / pow(180/M_PI, 2); //convert to steradians
+
+	double boxarea = boxsize_deg*boxsize_deg;
+	boxarea = boxarea/ pow(180/M_PI,2);
+
+	printf("Intensity map boxsize in Mpc/h: %lf\n", pixlen_mpc_h*Nmeshxy);
+
+	double** I_lines;
+	I_lines = (double**)malloc(NLINES * sizeof(double*));
+	for (int iline = 0; iline < NLINES; iline++)
+	{
+		I_lines[iline] = calloc(Nmeshtot,sizeof(double));
+	}
+
+	double L_lines_total[NLINES] = {};
+
+	char *dir;
+	dir = argv[5];
+
+	for (int iline = 0; iline < 1; iline++)
+	{
+		double z;
+		z = redshifts[iline];
+		z = round(z*10)/10; //round to 1dp
+
+		double r_z = comoving_coordinate(cosm, z); // comoving distance [cm]
+		double chi = kai_distance(cosm, z) * cspeed/(H0*cosm.hubble) / mpc; //comoving distance [Mpc]
+		double l_l = luminosity_distance(cosm, z); // luminosity distance [cm]
+		double d_A = angular_distance(cosm, z); // angular diameter distance [cm] 
+		double deltaz = (1 + z) / spectral_resolution;
+		double zstart = z - deltaz/2;
+
+		double dz = deltaz/Nmeshz;
+
+	
+		FILE *fp;
+		char fname[128];
+		//sprintf(fname, "pinocchio_with_luminosities_z=%.1f.txt", z);
+		sprintf(fname, "../mass-sfr.txt");
+		fp = fopen(fname, "r");
+		if (fp==NULL)
+		{
+			fprintf(stderr, "cannot open file: %s\n", fname);
+			exit(1);
+		}
+	
+
+
+		int arrlen = 100000;
+		const int STEPSIZE = 100000;
+
+		double** pos;
+		pos = (double**) malloc(3 * sizeof(double*));
+		for (int i = 0; i < 3; i++)
+		{
+			pos[i] = (double*) malloc(arrlen*sizeof(double));
+		}
+
+		double** L_lines_all;
+		L_lines_all = (double**)malloc(NLINES * sizeof(double*));
+		for (int line = 0; line < NLINES; line++)
+		{
+			L_lines_all[line] = (double*) malloc(arrlen*sizeof(double));
+		}
+
+
+		double** L_lines;
+		L_lines = (double**)malloc(NLINES * sizeof(double*));
+		for (int line = 0; line < NLINES; line++)
+		{
+			L_lines[line] = (double*) malloc(arrlen*sizeof(double));
+		}
+
+
+		double *concs;
+		concs = (double*)malloc(arrlen * sizeof(double));
+
+		double *r_virs;
+		r_virs = (double*)malloc(arrlen * sizeof(double));
+
+
+		double* x;
+		double* y;
+		x = (double*) malloc(arrlen*sizeof(double));
+		y = (double*) malloc(arrlen*sizeof(double));
+
+		char str[512];
+		int i = 0;
+		int j = 0;
+
+		printf("\nReading %s\n", fname);
+		time(&now);
+		printf("%s\n", ctime(&now));
+
+		fflush(stdout);
+		while(fgets(str, 256, fp) != NULL)
+		{
+			if (i == arrlen)
+			{
+				arrlen += STEPSIZE;
+				for (int line = 0; line < NLINES; line++)
+				{
+					L_lines_all[line] = realloc(L_lines_all[line], arrlen * sizeof(double));
+					L_lines[line] = realloc(L_lines[line], arrlen * sizeof(double));
+				}
+				for (int i = 0; i < 3; i++)
+				{
+					pos[i] = realloc(pos[i], arrlen * sizeof(double));
+				}
+
+				concs = realloc(concs, arrlen * sizeof(double));
+
+				x = realloc(x, arrlen * sizeof(double));
+				y = realloc(y, arrlen * sizeof(double));
+
+				if (!L_lines_all[0])
+				{
+					fprintf(stderr, "Can't realloc\n");
+					exit(1);
+				}
+			}
+
+			if (str[0] == '#') continue;
+			else
+			{
+				//sscanf(str, "%*s %lf %lf %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &L_lines_all[0][i], &L_lines_all[1][i], &L_lines_all[2][i]);
+				sscanf(str, "%*s %lf %lf %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &L_lines_all[0][i]);
+				if (pos[2][i] < 100)
+				{
+					x[j] = pos[0][i];
+					y[j] = pos[1][i];
+					L_lines[iline][j] = L_lines_all[iline][i];
+					j++;
+				}
+			
+				i++;
+			}
+		}
+		fclose(fp);
+		printf("Finished reading %s\n", fname);
+		time(&now);
+		printf("%s\n", ctime(&now));
+		fflush(stdout);
+	
+		int Nsubhalo_in_slice = j;
+		printf("total number of subhalos: %d\n", i);
+		printf("number of subhalos in slice: %d\n", Nsubhalo_in_slice);
+	
+		fflush(stdout);
+
+		printf("\nStarting to make intensity map\n");
+		time(&now);
+		printf("%s\n", ctime(&now));
+
+		fflush(stdout);
+		int count = 0;
+		double tracker = 1;
+
+		double fracs[NPIX_NFW][NPIX_NFW];
+
+		for (int j = 0; j < Nsubhalo_in_slice; j++)
+		{	
+			if (j == (int)tracker*Nsubhalo_in_slice/10)
+			{
+				printf(".");
+				fflush(stdout);
+				tracker ++;
+			}
+			int ix = (int)(x[j]/pixlen_mpc_h);
+			int iy = (int)(y[j]/pixlen_mpc_h);
+
+			if (ix < Nmeshxy && iy < Nmeshxy)
+			{
+				L_lines_total[iline] += pow(10, L_lines[iline][j]);
+				double L = L_lines[iline][j];
+				double frac_sum = 0;
+				int l_edge = (int) NPIX_NFW/2;
+				for (int lx = -l_edge; lx < l_edge+1; lx++)
+				{
+					for (int ly = -l_edge; ly < l_edge+1; ly++)
+					{
+						double xi = (ix+lx+0.5) * pixlen_mpc_h;
+						double yi = (iy+ly+0.5) * pixlen_mpc_h;
+						double r = sqrt(pow(xi - x[j], 2) + pow(yi - y[j],2));
+						double frac = rho_frac_NFW_unnormalised(concs[j], r_virs[j], r);
+						frac_sum += frac;
+						fracs[lx+1][ly+1] = frac;
+						printf("%lf\n", frac);
+					}
+				}
+				printf("frac_sum: %lf\n", frac_sum);
+
+				double I_line = I_nu_pinocchio_spherex(L_lines[iline][j], pixsize, l_l, lambda_rest[iline], z, dz, cosm, extinction[iline]);
+				for (int lx = -l_edge; lx < l_edge+1; lx++)
+				{
+					if ((ix+lx) >= 0 && (ix+lx) < Nmeshxy)
+					{
+					for (int ly = -l_edge; ly < l_edge+1; ly++)
+					{
+						if ((iy+ly) >= 0 && ((iy+ly) < Nmeshxy))
+						{
+							printf("%d\n", ix+lx);
+							printf("%lf\n", fracs[lx+1][ly+1]/frac_sum);
+						I_lines[iline][(ix+lx) + (iy+ly)*Nmeshxy] += (I_line*fracs[lx+1][ly+1]/frac_sum);
+						}
+					}
+					}
+				}
+				count+=1;
+			}
+		}
+		printf("\n");
+		printf("number of subhalos in box: %d\n", count);	
+		time(&now);
+		printf("%s\n", ctime(&now));
+
+		double mean = I_nu_pinocchio_spherex_mean(L_lines_total[iline], boxarea, l_l, lambda_rest[iline], z, dz, cosm, extinction[iline]);
+		printf("mean: %e\n", mean*nu_obs);
+	}
+
+	double** nu_I_lines;
+	nu_I_lines = (double**)malloc((NLINES+1) * sizeof(double*));
+	for (int iline = 0; iline < NLINES; iline++)
+	{
+		nu_I_lines[iline] = (double*) malloc(Nmeshtot*sizeof(double));
+	}
+
+	double *nu_I_noise;
+	nu_I_noise = (double*)malloc(Nmeshtot * sizeof(double));
+
+
+	char *linenames_with_noise[NLINES+1];
+	for (int line = 0; line < NLINES; line++)
+	{
+		linenames_with_noise[line] = linenames[line];
+	}
+	linenames_with_noise[NLINES] = "noise";
+
+	double I_sigma1 = atof(argv[3]) * angular_resolution_sphereX/res;
+	double min_nu_I[NLINES+1] = {1,1,1,1};
+	double max_nu_I[NLINES+1] = {0,0,0,0};
+
+
+	FILE *fp1;
+	char fname1[128];
+	sprintf(fname1, "%s/intensity.txt", dir);
+	fp1 = fopen(fname1, "w");
+
+
+	fprintf(fp1, "# nu_obs * I\n");
+	fprintf(fp1, "# %s (z=%.1f)", linenames[0], redshifts[0]);
+
+	for (int iline = 1; iline < NLINES; iline++)
+	{
+		fprintf(fp1, " %s (z=%.1f)", linenames[iline], redshifts[iline]);
+	}
+	fprintf(fp1, "  %s", linenames_with_noise[NLINES]);
+	fprintf(fp1, "\n");
+
+
+	printf("Writing to %s\n", fname1);
+	fflush(stdout);
+	time(&now);
+	printf("%s\n", ctime(&now));
+
+	double tracker=1;
+	printf("Nmeshtot: %d\n", Nmeshtot);
+	for (int i = 0; i < Nmeshtot; i++)
+	{
+		if (i == (int)tracker*Nmeshtot/10)
+			{
+				printf(".");
+				fflush(stdout);
+				tracker ++;
+			}
+
+		//printf("%e\n", I_lines[0][i]);
+		for (int iline = 0; iline < NLINES; iline++)
+		{
+			nu_I_lines[iline][i] = nu_obs * I_lines[iline][i];
+		//	printf("%e\n", nu_I_lines[iline][i]);
+			fprintf(fp1, "%e ", nu_I_lines[iline][i]);
+		//	if (nu_I_lines[iline][i] < min_nu_I[iline] && nu_I_lines[iline][i] != 0) min_nu_I[iline] = nu_I_lines[iline][i];
+		//	if (nu_I_lines[iline][i] > max_nu_I[iline]) max_nu_I[iline] = nu_I_lines[iline][i];
+		}
+		nu_I_noise[i] = gaussian_rand(0, I_sigma1);
+		fprintf(fp1, "%lf", nu_I_noise[i]);
+		fprintf(fp1, "\n");
+	//	if (nu_I_noise[i] < min_nu_I[NLINES] && nu_I_noise[i] > 0) min_nu_I[NLINES] = nu_I_noise[i];
+	//	if (nu_I_noise[i] > max_nu_I[NLINES]) max_nu_I[NLINES] = nu_I_noise[i];
+	}
+	fclose(fp1);	
+
+	printf("\n");
+	nu_I_lines[NLINES] = nu_I_noise;
+	
+	time(&now);
+	printf("%s\n", ctime(&now));
+
+}

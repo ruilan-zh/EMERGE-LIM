@@ -13,7 +13,7 @@ sfr_counts = [0]*len(mass_bins)
 tot_counts = [0]*len(mass_bins)
 
 #mass, sfr = np.loadtxt("mass-sfr.txt", unpack=True)
-mass1, sfr1 = np.loadtxt("mass-sfr-sat.txt", unpack=True)
+mass1, sfr1 = np.loadtxt("mass-sfr-sum.txt", unpack=True)
 
 #mask = (np.isinf(sfr) == 0) & (np.isnan(sfr) == 0) & (mass < 11)
 mask1 = (np.isinf(sfr1) == 0) & (np.isnan(sfr1) == 0)

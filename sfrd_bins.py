@@ -1,6 +1,6 @@
 import numpy as np
 
-boxsize = 500
+boxsize = 250
 
 logMmin = 8
 dlogM = 0.2

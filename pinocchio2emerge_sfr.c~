@@ -60,6 +60,8 @@ int main(int argc, char **argv)
 	cosm.omegab = 0.0493;
 	cosm.hubble = 0.6736;
 
+	double f_b = cosm.omegab / cosm.omega;
+
 	typedef struct
 	{
 	unsigned long long int id; //8 bytes
@@ -87,9 +89,9 @@ int main(int argc, char **argv)
 //	double pmass = 2.59293 * 1e7; // N1500 100 Mpc/h
 //	double pmass = 3.3383 * 1e8; // N1600 250 Mpc/h (z=0.4)
 
-	double pmass = 1.59183 * 1e8; // N4096 500 Mpc/h (z=1.5)
+//	double pmass = 1.59183 * 1e8; // N4096 500 Mpc/h (z=1.5)
 
-//	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
+	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
 
 
 //	double min_part = 10;
@@ -99,7 +101,7 @@ int main(int argc, char **argv)
 	double min_hmass = pmass*min_part; 
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 1.5;
+	double zout = 1.47;
 	
 	double tdyn = t_dyn(cosm, zout);
 	printf("tdyn: %g years\n", tdyn);
@@ -114,17 +116,17 @@ int main(int argc, char **argv)
 
 	char runname[16], filename[256];
 
-//	sprintf(runname, "r000%d", irun);
-	sprintf(runname, "test8");
+	sprintf(runname, "r000%d", irun);
+//	sprintf(runname, "test8");
 
 
-//	char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1750";
-	char cat_dir[128] = "/mnt/data_cat4/moriwaki";
+	char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
+	//char cat_dir[128] = "/mnt/data_cat4/moriwaki";
 
 	FILE *fp_cat;
 	char fname_cat[64];
 
-	sprintf(fname_cat, "%s/pinocchio.%.1f000.%s.catalog.out", cat_dir, zout, runname);
+	sprintf(fname_cat, "%s/pinocchio.%.2f00.%s.catalog.out", cat_dir, zout, runname);
 	printf("Opening file %s\n",fname_cat);
 
 	fp_cat = fopen(fname_cat, "r");
@@ -224,8 +226,8 @@ int main(int argc, char **argv)
 
 	FILE *fp;
 
-//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1750";
-	char dir[128] = "/mnt/data_cat4/moriwaki";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
+	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
 	printf("Opening file %s\n", filename);
 
@@ -402,9 +404,11 @@ int main(int argc, char **argv)
 		z_bins[ibin] = zmin + ibin*dz;
 	}
 
+	/*
 	double log_eta_ha = 39.38;
 	double e_ha = 0.951;  
 	double chabrier_factor = 0.88;
+	*/
 
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
 	{
@@ -463,6 +467,7 @@ int main(int argc, char **argv)
 			}
 
 			double M_host[nbranch_tree];
+			double logM_out;
 
 			start = clock();
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
@@ -477,6 +482,7 @@ int main(int argc, char **argv)
 				if (ibranch == 0)
 				{
 					M_out = m1;
+					logM_out = log10(M_out);
 					unsigned long long int id = histdata.name;
 					if (id != groupids[itree]) 
 					{
@@ -512,7 +518,7 @@ int main(int argc, char **argv)
 						if (imw == 0) index = 0; //underestimates dynamical time
 					}
 					
-					if (log10(M_out) > 10)
+					if (logM_out > 11.5)
 					{
 						// before merging with main branch
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
@@ -524,7 +530,7 @@ int main(int argc, char **argv)
 					imw++;
 
 				}
-				else if (log10(M_out) > 10)
+				else if (logM_out > 11.5)
 				{
 					
 					double zmerger = histdata.zme; // redshift at merger 
@@ -559,7 +565,6 @@ int main(int argc, char **argv)
 			{
 				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
 				{
-				double logM_out = log10(M_out);
 
 				Md = M_dyn(masses, redshifts, index, z1, equals);
 
@@ -583,7 +588,6 @@ int main(int argc, char **argv)
 
 				double dM_dt = dM_dt_dyn - term2;
 
-				double f_b = cosm.omegab / cosm.omega;
 				double dmb_dt = f_b * dM_dt;
 				double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
 				sfr = dmb_dt * e;
@@ -669,7 +673,6 @@ int main(int argc, char **argv)
 						double dM_dt = dM_dt_dyn - term2; // [Msun/yr]
 
 
-						double f_b = cosm.omegab / cosm.omega;
 						double dmb_dt = f_b * dM_dt;
 						double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
 						double sfr_sat = dmb_dt * e;

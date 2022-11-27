@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
 		int k = 0;
 
 		int count_cent = 0;
+		/*
 		while(fgets(str, 256, fp) != NULL)
 		{
 			if (i == arrlen)
@@ -168,6 +169,7 @@ int main(int argc, char *argv[])
 			}
 			k++;
 		}
+		*/
 		fclose(fp);
 		printf("%d\n", k);
 	

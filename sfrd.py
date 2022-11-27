@@ -1,16 +1,18 @@
 import numpy as np
 
-#mass, sfr = np.loadtxt("mass-sfr.txt", unpack=True)
+cent = np.loadtxt("mass-sfr.txt", unpack=True)
 mass1, sfr1 = np.loadtxt("mass-sfr-sum.txt", unpack=True)
 
-#mask = (np.isinf(sfr) == 0) & (np.isnan(sfr) == 0)   #& (sfr > 1)# & (sfr < 1)
+mass,sfr = [cent[0], cent[-1]]
+
+mask = (np.isinf(sfr) == 0) & (np.isnan(sfr) == 0)   #& (sfr > 1)# & (sfr < 1)
 mask1 = (np.isinf(sfr1) == 0) & (np.isnan(sfr1) == 0)  #& (sfr1>-0.5)  
 
 
 #sfr_sum = np.sum(10**sfr[mask])
 sfr_sum1 = np.sum(10**sfr1[mask1])
 sfr_sum = sfr_sum1
-boxsize_mpc_h = 500
+boxsize_mpc_h = 250
 boxsize_mpc = boxsize_mpc_h /0.67
 volume = boxsize_mpc**3
 sfrd = sfr_sum/volume

@@ -117,16 +117,19 @@ int main(int argc, char **argv)
 	char runname[16], filename[256];
 
 	sprintf(runname, "r000%d", irun);
-//	sprintf(runname, "test8");
+	//sprintf(runname, "test32");
 
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
+	//char dir[128] = "/mnt/data_cat4/moriwaki";
+	
 
-	char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
+	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char cat_dir[128] = "/mnt/data_cat4/moriwaki";
 
 	FILE *fp_cat;
-	char fname_cat[64];
+	char fname_cat[128];
 
-	sprintf(fname_cat, "%s/pinocchio.%.2f00.%s.catalog.out", cat_dir, zout, runname);
+	sprintf(fname_cat, "%s/pinocchio.%.2f00.%s.catalog.out", dir, zout, runname);
 	printf("Opening file %s\n",fname_cat);
 
 	fp_cat = fopen(fname_cat, "r");
@@ -226,8 +229,6 @@ int main(int argc, char **argv)
 
 	FILE *fp;
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
-	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
 	printf("Opening file %s\n", filename);
 
@@ -444,6 +445,8 @@ int main(int argc, char **argv)
 			int found = 0;
 			int mw_none = 1;
 			int mw_main[nbranch_tree];
+			double cBN;
+			double r_vir_out;
 
 			int *imw_sats;
 			imw_sats = (int*) malloc(nbranch_tree* sizeof(int));
@@ -561,6 +564,9 @@ int main(int argc, char **argv)
 			if (index == -1) index = imw-1; // default value, then in last bin (between second to last and last (output) redshift - z1 only higher than output redshift)
 			double Md; // M(t - tdyn)
 			double sfr = 0;
+			double sigma_e;
+			if (log10(M_out/cosm.hubble) < 12.7) sigma_e = 0.6;
+			else sigma_e = 0.4;
 			if (mw_none == 0)
 			{
 				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
@@ -576,9 +582,9 @@ int main(int argc, char **argv)
 				double x = omega_m(cosm, zout) - 1;
 				double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
 				double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,zout);
-				double cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, zout, zout, cubic_set, n_table, table_x, table_y);
+				cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, zout, zout, cubic_set, n_table, table_x, table_y);
 
-				double r_vir_out = rvir_from_mvir(cosm, M_out, zout);
+				r_vir_out = rvir_from_mvir(cosm, M_out, zout);
 				double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
 				double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
 
@@ -590,6 +596,12 @@ int main(int argc, char **argv)
 
 				double dmb_dt = f_b * dM_dt;
 				double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
+
+
+				if (log10(M_out/cosm.hubble) < 12.45&& log10(M_out/cosm.hubble) > 12.1) e = pow(10, log10(e)-0.15); 
+				
+				e = gaussian_rand(log10(e), sigma_e);
+				e = pow(10,e);
 				sfr = dmb_dt * e;
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
 //				log_lum_cent = log10(sfr/(4.4 *pow(10,-42)));
@@ -608,7 +620,7 @@ int main(int argc, char **argv)
 			{
 				double t_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 				//printf("t_quench: %lf\n", t_quench);
-				//fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
+				fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 			{
 				int nmw_sat = imw_sats[ibranch];
@@ -662,10 +674,10 @@ int main(int argc, char **argv)
 						double x = omega_m(cosm, z_infall) - 1;
 						double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
 						double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z_infall);
-						double cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
+						double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
 
 						double r_vir_infall = rvir_from_mvir(cosm, M_infall, z_infall);
-						double rho_vir_infall = rho_nfw(cosm, cBN, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
+						double rho_vir_infall = rho_nfw(cosm, cBN_sat, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
 						double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
 						
 						double dR_dt_dyn = (r_vir_infall - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
@@ -675,6 +687,9 @@ int main(int argc, char **argv)
 
 						double dmb_dt = f_b * dM_dt;
 						double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
+						e = gaussian_rand(log10(e), sigma_e);
+						e = pow(10,e);
+	
 						double sfr_sat = dmb_dt * e;
 					
 
@@ -693,10 +708,11 @@ int main(int argc, char **argv)
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
 			}
-			if (sfr > 0) 
+			if (log10(M_out) > 10 && sfr > 0) 
 			{
 				double logsfr = log10(sfr);
-				if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));
+				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));
+				fprintf(fp_sfr_sum, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, logsfr);
 			}
 		
 			

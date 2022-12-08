@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-boxsize=250 #Mpc
+boxsize=500 #Mpc/h
 pixlen=100 #arcsec
 I_sigma=1.912202
 

@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 		FILE *fp;
 		char fname[128];
 		//sprintf(fname, "pinocchio_with_luminosities_z=%.1f.txt", z);
-		sprintf(fname, "../mass-sfr.txt");
+		sprintf(fname, "../L500_npart32//mass-sfr.txt");
 		fp = fopen(fname, "r");
 		if (fp==NULL)
 		{
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	
 
 
-		int arrlen = 100000;
+		int arrlen = 1000000;
 		const int STEPSIZE = 100000;
 
 		double** pos;
@@ -168,6 +168,9 @@ int main(int argc, char *argv[])
 
 		double *r_virs;
 		r_virs = (double*)malloc(arrlen * sizeof(double));
+		
+		double *sfrs;
+		sfrs = (double*)malloc(arrlen * sizeof(double));
 
 
 		double* x;
@@ -175,7 +178,7 @@ int main(int argc, char *argv[])
 		x = (double*) malloc(arrlen*sizeof(double));
 		y = (double*) malloc(arrlen*sizeof(double));
 
-		char str[512];
+		char str[1024];
 		int i = 0;
 		int j = 0;
 
@@ -184,7 +187,7 @@ int main(int argc, char *argv[])
 		printf("%s\n", ctime(&now));
 
 		fflush(stdout);
-		while(fgets(str, 256, fp) != NULL)
+		while(fgets(str, 1024, fp) != NULL)
 		{
 			if (i == arrlen)
 			{
@@ -200,11 +203,13 @@ int main(int argc, char *argv[])
 				}
 
 				concs = realloc(concs, arrlen * sizeof(double));
+				r_virs = realloc(r_virs, arrlen * sizeof(double));
+				sfrs = realloc(sfrs, arrlen * sizeof(double));
 
 				x = realloc(x, arrlen * sizeof(double));
 				y = realloc(y, arrlen * sizeof(double));
 
-				if (!L_lines_all[0])
+				if (!sfrs)
 				{
 					fprintf(stderr, "Can't realloc\n");
 					exit(1);
@@ -215,12 +220,13 @@ int main(int argc, char *argv[])
 			else
 			{
 				//sscanf(str, "%*s %lf %lf %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &L_lines_all[0][i], &L_lines_all[1][i], &L_lines_all[2][i]);
-				sscanf(str, "%*s %lf %lf %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &L_lines_all[0][i]);
+				sscanf(str, "%*s %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &sfrs[i]);
 				if (pos[2][i] < 100)
 				{
 					x[j] = pos[0][i];
 					y[j] = pos[1][i];
-					L_lines[iline][j] = L_lines_all[iline][i];
+					double log_lum = sfrs[i] - log10(4.4 *pow(10,-42));
+					L_lines[iline][j] = log_lum;
 					j++;
 				}
 			
@@ -276,10 +282,10 @@ int main(int argc, char *argv[])
 						double frac = rho_frac_NFW_unnormalised(concs[j], r_virs[j], r);
 						frac_sum += frac;
 						fracs[lx+1][ly+1] = frac;
-						printf("%lf\n", frac);
+						//printf("%lf\n", frac);
 					}
 				}
-				printf("frac_sum: %lf\n", frac_sum);
+				//printf("frac_sum: %lf\n", frac_sum);
 
 				double I_line = I_nu_pinocchio_spherex(L_lines[iline][j], pixsize, l_l, lambda_rest[iline], z, dz, cosm, extinction[iline]);
 				for (int lx = -l_edge; lx < l_edge+1; lx++)
@@ -290,8 +296,8 @@ int main(int argc, char *argv[])
 					{
 						if ((iy+ly) >= 0 && ((iy+ly) < Nmeshxy))
 						{
-							printf("%d\n", ix+lx);
-							printf("%lf\n", fracs[lx+1][ly+1]/frac_sum);
+							//printf("%d\n", ix+lx);
+							//printf("%lf\n", fracs[lx+1][ly+1]/frac_sum);
 						I_lines[iline][(ix+lx) + (iy+ly)*Nmeshxy] += (I_line*fracs[lx+1][ly+1]/frac_sum);
 						}
 					}

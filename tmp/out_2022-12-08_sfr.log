@@ -1,0 +1,12 @@
+Thu Dec  8 10:41:57 2022
+
+Min halo mass: 9.707206
+tdyn: 6.85008e+08 years
+tout - tdyn: 3.67359e+09 years
+z(tout - tdyn): 1.780420
+Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290/pinocchio.1.4700.r00022.catalog.out
+The file has been written by 40 tasks
+The box has been fragmented in 1 slices
+nhalo in cat: 7943410
+Opening file pinocchio.1.4700.r00022.catalog.out/pinocchio.r00022.histories.out
+Error: history file pinocchio.1.4700.r00022.catalog.out/pinocchio.r00022.histories.out not found

@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 	printf("Computing 2D power spectrum\n");
 	fflush(stdout);
 	ps_2d(fnameps2d, Npix, nu_I_lines_2d, linenames_with_noise, boxsize_mpc_h, NLINES+1);
-//	ps_3d(fnameps3d, Npix, nu_I_lines, linenames_with_noise, boxsize, NLINES+1);	
+	ps_3d(fnameps3d, Npix, nu_I_lines, linenames_with_noise, boxsize_mpc_h, NLINES+1);	
 	time(&now);
 	printf("%s\n", ctime(&now));
 

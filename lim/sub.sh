@@ -2,7 +2,7 @@
 set -e
 
 boxsize=500 #Mpc/h
-pixlen=100 #arcsec
+pixlen=6.2 #arcsec
 I_sigma=1.912202
 
 lambda_obs=1.5 #micrometres

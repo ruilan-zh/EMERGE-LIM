@@ -10,6 +10,8 @@
 
 #include "spline.h"
 
+#include "mt19937ar.h"
+
 double E_z(Cosmology cosm, double z);
 double omega_m(Cosmology cosm, double z);
 double rho_crit(Cosmology cosm, double z);
@@ -47,6 +49,9 @@ double M_pinocchio2vir(Cosmology cosm, double M_pinocchio, double z, double *cub
 
 int main(int argc, char **argv)
 {
+	int seed = 0;
+	init_genrand(seed);
+
 	clock_t start, end;
 	double cpu_time_used;
 
@@ -81,7 +86,7 @@ int main(int argc, char **argv)
 
 
 	int irun = 22;
-//	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
+	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
 //	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
@@ -91,17 +96,19 @@ int main(int argc, char **argv)
 
 //	double pmass = 1.59183 * 1e8; // N4096 500 Mpc/h (z=1.5)
 
-	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
+//	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
+
+//	double pmass = 2.93517 * 1e8; // N4500 1 Mpc (z=1.5)
 
 
-//	double min_part = 10;
-	double min_part = 8;
+	double min_part = 10;
+//	double min_part = 8;
 //	double min_part = 32;
 
 	double min_hmass = pmass*min_part; 
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 1.47;
+	double zout = 1.5;
 	
 	double tdyn = t_dyn(cosm, zout);
 	printf("tdyn: %g years\n", tdyn);
@@ -117,9 +124,9 @@ int main(int argc, char **argv)
 	char runname[16], filename[256];
 
 	sprintf(runname, "r000%d", irun);
-	//sprintf(runname, "test32");
+	//sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
@@ -380,6 +387,45 @@ int main(int argc, char **argv)
 	}
 	fclose(fp_conc);
 
+	FILE *fp_etest;
+	char fname_etest[128];
+	sprintf(fname_etest, "etest0.5_2.txt");
+	printf("Opening file %s\n", fname_etest);
+
+	fp_etest = fopen(fname_etest, "r");
+	if (fp_etest==NULL)
+	{
+		printf("Error: file %s not found\n", fname_etest);
+		return 1;
+	}
+	
+	int nbins_e = 11;  
+	double Mmin_e = 11;
+	double dM_e = 0.2;
+
+	double *e_means;
+	e_means = (double*) malloc(nbins_e * sizeof(double));
+	double *e_sigmas;
+	e_sigmas = (double*) malloc(nbins_e * sizeof(double));
+
+	double *mass_bins_e;
+	mass_bins_e = (double*) malloc(nbins_e * sizeof(double));
+
+
+
+
+	char str_e[1024];
+	int ibin_e = 0;
+	while(fgets(str_e, 1024, fp_etest) != NULL)
+	{	
+		if (str_e[0] == '#') printf("%s\n", str_e);
+		else
+		{
+			sscanf(str_e, "%lf %lf %lf %*s", &mass_bins_e[ibin_e], &e_means[ibin_e], &e_sigmas[ibin_e]);
+			ibin_e++;
+		}
+	}
+	fclose(fp_etest);
 
 	double logMmin = 9.0;
 	double dlogM = 0.1;
@@ -564,9 +610,25 @@ int main(int argc, char **argv)
 			if (index == -1) index = imw-1; // default value, then in last bin (between second to last and last (output) redshift - z1 only higher than output redshift)
 			double Md; // M(t - tdyn)
 			double sfr = 0;
+//			if (log10(M_out/cosm.hubble) < 12.7) sigma_e = 0.6;
+//			else sigma_e = 0.4;
+			int ibin_e = (int)((log10(M_out/cosm.hubble) - Mmin_e)/dM_e);
+			double mean_e;
 			double sigma_e;
-			if (log10(M_out/cosm.hubble) < 12.7) sigma_e = 0.6;
-			else sigma_e = 0.4;
+			//printf("%lf\n", log10(M_out/cosm.hubble));
+			if (ibin_e >= 0 && ibin_e < nbins_e) 
+			{
+			//printf("ibin: %d\n", ibin_e);
+			mean_e = e_means[ibin_e];
+			//printf("%lf\n", mean_e);
+			mean_e = lin_interp(mass_bins_e, e_means, log10(M_out/cosm.hubble), ibin_e);
+			//printf("b: %lf\n", mean_e);
+			//sigma_e = e_sigmas[ibin_e];
+//			printf("sigma: %lf\n", sigma_e);
+			//sigma_e = lin_interp(mass_bins_e, e_sigmas, log10(M_out/cosm.hubble), ibin_e);
+//			printf("b: %lf\n", sigma_e);
+			sigma_e = 0.2;
+			}
 			if (mw_none == 0)
 			{
 				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
@@ -596,17 +658,40 @@ int main(int argc, char **argv)
 
 				double dmb_dt = f_b * dM_dt;
 				double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
-
-
-				if (log10(M_out/cosm.hubble) < 12.45&& log10(M_out/cosm.hubble) > 12.1) e = pow(10, log10(e)-0.15); 
 				
+				double log_e = gaussian_rand(log10(e), sigma_e);
+				e = pow(10,log_e);
+
+
+				//printf("mean_e: %g\n", mean_e);
+				//printf("c: %g\n", e);
+				//sigma_e = 0.2;
+				/*
+				if (ibin_e >= 0 && ibin_e < nbins_e) 
+				{
+					double log_e = gaussian_rand(mean_e, sigma_e);
+					e = pow(10.0,log_e);
+				}
+				*/
+
+
+				//printf("c: %g\n", e);
+				/*
+				if (log10(M_out/cosm.hubble) < 12.7&& log10(M_out/cosm.hubble) > 12.1) e = pow(10, log10(e)-0.1); 
+				else if (log10(M_out/cosm.hubble) < 12.1&& log10(M_out/cosm.hubble) > 11.7) e = pow(10, log10(e)-0.05); 
+				else if (log10(M_out/cosm.hubble) < 12.1&& log10(M_out/cosm.hubble) > 12.7) e = pow(10, log10(e)+0.05); 
+				
+				*/
+				/*
 				e = gaussian_rand(log10(e), sigma_e);
 				e = pow(10,e);
+				*/
+
 				sfr = dmb_dt * e;
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
 //				log_lum_cent = log10(sfr/(4.4 *pow(10,-42)));
 				//printf("%lf\n", log_lum_cent);
-				if (log10(M_out) > 10 && sfr > 0)
+				if (log10(M_out) > 11 && sfr > 0)
 				{
 				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
@@ -690,6 +775,13 @@ int main(int argc, char **argv)
 						e = gaussian_rand(log10(e), sigma_e);
 						e = pow(10,e);
 	
+						/*
+						if (ibin_e >= 0 && ibin_e < nbins_e) 
+						{
+							double mean_log_e = gaussian_rand(mean_e, sigma_e);
+							e = pow(10,mean_log_e);
+						}
+						*/
 						double sfr_sat = dmb_dt * e;
 					
 
@@ -708,7 +800,7 @@ int main(int argc, char **argv)
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
 			}
-			if (log10(M_out) > 10 && sfr > 0) 
+			if (log10(M_out) > 11 && sfr > 0) 
 			{
 				double logsfr = log10(sfr);
 				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));

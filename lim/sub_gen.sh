@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-pixlen=100 #$1 #arcseconds
+pixlen=6.2 #$1 #arcseconds
 Nmeshz=1 #$2
 boxsize=500 #Mpc/h
 

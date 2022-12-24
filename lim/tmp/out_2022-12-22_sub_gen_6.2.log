@@ -1,0 +1,46 @@
+rm -f generate_stats
+rm -f *.o
+gcc -I//mnt/data_cat5/rlzhang/LIM-Pinocchio -I//home/rlzhang/local/include -I//home/rlzhang/local/include  -c generate_stats.c
+gcc -I//mnt/data_cat5/rlzhang/LIM-Pinocchio -I//home/rlzhang/local/include -I//home/rlzhang/local/include  generate_stats.o -L//mnt/data_cat5/rlzhang/LIM-Pinocchio -lmylim -L//home/rlzhang/local/lib -lfftw3 -L//home/rlzhang/local/lib -lgsl -lgslcblas -lm  -o generate_stats
+Thu Dec 22 10:13:12 2022
+
+cp0
+cp1
+Nmeshz: 1
+cp2
+cp3
+cp4
+Thu Dec 22 10:13:12 2022
+
+Reading ./figures_lambda=1.5_sphereX_pixlen=6.2/intensity.txt
+cp5
+cp6
+Thu Dec 22 10:13:24 2022
+
+Computing projected map
+max 2d: 33.461420
+max 2d: 2968.371086
+max 3d: 33.461420
+cp15.5
+Thu Dec 22 10:13:46 2022
+
+Computing 2D power spectrum
+Thu Dec 22 10:13:58 2022
+
+cp16.01
+Computing PDF
+cp18
+Thu Dec 22 10:13:59 2022
+
+cp19
+cp20
+cp21
+cp22
+0.000000
+33.461420
+cp16.1
+0.000000
+cp16.3
+cp17
+Thu Dec 22 10:14:00 2022
+

@@ -1,0 +1,33 @@
+generate_stats.c:11:0: warning: "NLINES" redefined
+ #define NLINES 1
+ 
+In file included from //mnt/data_cat5/rlzhang/LIM-Pinocchio/proto.h:13:0,
+                 from generate_stats.c:7:
+//mnt/data_cat5/rlzhang/LIM-Pinocchio/para.h:37:0: note: this is the location of the previous definition
+ #define NLINES 3
+ 
+generate_stats.c: In function ‘main’:
+generate_stats.c:66:56: warning: excess elements in array initializer
+  char *linenames_with_noise[NLINES+1] = {"Ha", "OIII", "OII", "noise"};
+                                                        ^~~~~
+generate_stats.c:66:56: note: (near initialization for ‘linenames_with_noise’)
+generate_stats.c:66:63: warning: excess elements in array initializer
+  char *linenames_with_noise[NLINES+1] = {"Ha", "OIII", "OII", "noise"};
+                                                               ^~~~~~~
+generate_stats.c:66:63: note: (near initialization for ‘linenames_with_noise’)
+generate_stats.c:71:48: warning: excess elements in array initializer
+  double lambda_rest[NLINES] = {lambda_rest_Ha, lambda_rest_O3, lambda_rest_O2};
+                                                ^~~~~~~~~~~~~~
+generate_stats.c:71:48: note: (near initialization for ‘lambda_rest’)
+generate_stats.c:71:64: warning: excess elements in array initializer
+  double lambda_rest[NLINES] = {lambda_rest_Ha, lambda_rest_O3, lambda_rest_O2};
+                                                                ^~~~~~~~~~~~~~
+generate_stats.c:71:64: note: (near initialization for ‘lambda_rest’)
+generate_stats.c:143:44: warning: excess elements in array initializer
+  double max_nu_I_2d[NLINES+1] = {0.0, 0.0, 0.0, 0.0};
+                                            ^~~
+generate_stats.c:143:44: note: (near initialization for ‘max_nu_I_2d’)
+generate_stats.c:143:49: warning: excess elements in array initializer
+  double max_nu_I_2d[NLINES+1] = {0.0, 0.0, 0.0, 0.0};
+                                                 ^~~
+generate_stats.c:143:49: note: (near initialization for ‘max_nu_I_2d’)

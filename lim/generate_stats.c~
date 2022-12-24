@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 
 	printf("cp2\n");
 	char *linenames_with_noise[NLINES+1] = {"Ha", "OIII", "OII", "noise"};
+	linenames_with_noise[-1] = "noise";
 	double lambda_rest_Ha = 6563 * Angstrom;
 	double lambda_rest_O3 = 5007 * Angstrom;
 	double lambda_rest_O2 = 3727 * Angstrom;
@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
 	printf("Computing 2D power spectrum\n");
 	fflush(stdout);
 	ps_2d(fnameps2d, Npix, nu_I_lines_2d, linenames_with_noise, boxsize_mpc_h, NLINES+1);
-//	ps_3d(fnameps3d, Npix, nu_I_lines, linenames_with_noise, boxsize, NLINES+1);	
+	ps_3d(fnameps3d, Npix, nu_I_lines, linenames_with_noise, boxsize, NLINES+1);	
 	time(&now);
 	printf("%s\n", ctime(&now));
 

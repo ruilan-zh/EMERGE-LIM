@@ -1,0 +1,30 @@
+Wed Dec 21 17:02:28 2022
+
+Min halo mass: 9.707206
+tdyn: 1.43189e+09 years
+tout - tdyn: 7.97872e+09 years
+z(tout - tdyn): 0.593388
+Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/0.4/N1290/pinocchio.0.4000.r00022.catalog.out
+The file has been written by 40 tasks
+The box has been fragmented in 1 slices
+nhalo in cat: 7724053
+Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/0.4/N1290/pinocchio.r00022.histories.out
+The run used 1 slices
+Opening file conc_diemer.txt
+nbins_m: 61
+nbins_z: 57
+# columns: log10(mass) 9 - 15 with dlogM = 0.1 (nbins = 61)
+
+# rows: redshifts 0.4 - 6 with dz = 0.1 (nbins = 57)
+
+ibin_z: 57
+Opening file etest0.5_2.txt
+logMmin: 9.000000
+dlogM: 0.100000
+zmin for conc table: 0.400000
+dz: 0.100000
+Ntrees: 7724053
+Nbranches: 18008912
+I found 7724053 trees and 18008912 branches in the file
+Wed Dec 21 17:03:55 2022
+

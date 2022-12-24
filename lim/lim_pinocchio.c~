@@ -120,14 +120,21 @@ int main(int argc, char *argv[])
 		double d_A = angular_distance(cosm, z); // angular diameter distance [cm] 
 		double deltaz = (1 + z) / spectral_resolution;
 		double zstart = z - deltaz/2;
+		double zend = z + deltaz/2;
 
+		double rstart = comoving_coordinate(cosm, zstart); // comoving distance [cm]
+		double rend = comoving_coordinate(cosm, zend); // comoving distance [cm]
+		double slice_width_mpc = (rend - rstart) / mpc; // slice width [mpc]
+		double slice_width = slice_width_mpc * cosm.hubble; // slice width [mpc/h]
+		printf("slice_width: %lf Mpc\n", slice_width_mpc);
+		printf("slice_width: %lf Mpc/h\n", slice_width);
 		double dz = deltaz/Nmeshz;
 
 	
 		FILE *fp;
 		char fname[128];
 		//sprintf(fname, "pinocchio_with_luminosities_z=%.1f.txt", z);
-		sprintf(fname, "../L500_npart8//mass-sfr.txt");
+		sprintf(fname, "../L500_npart32//mass-sfr.txt");
 		fp = fopen(fname, "r");
 		if (fp==NULL)
 		{
@@ -221,7 +228,7 @@ int main(int argc, char *argv[])
 			{
 				//sscanf(str, "%*s %lf %lf %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &L_lines_all[0][i], &L_lines_all[1][i], &L_lines_all[2][i]);
 				sscanf(str, "%*s %lf %lf %lf %lf %lf %lf", &pos[0][i], &pos[1][i], &pos[2][i], &concs[i], &r_virs[i], &sfrs[i]);
-				if (pos[2][i] < 100)
+#if (pos[2][i] < slice_width)
 				{
 					x[j] = pos[0][i];
 					y[j] = pos[1][i];

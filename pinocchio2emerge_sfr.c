@@ -98,7 +98,9 @@ int main(int argc, char **argv)
 
 //	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
 
-//	double pmass = 2.93517 * 1e8; // N4500 1 Mpc (z=1.5)
+//	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
+
+	double pmass = 1.02732 * 1e10; // N1100 1 Mpc (z=1.5,0.4)
 
 
 	double min_part = 10;
@@ -108,7 +110,7 @@ int main(int argc, char **argv)
 	double min_hmass = pmass*min_part; 
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 1.5;
+	double zout = 0.4;
 	
 	double tdyn = t_dyn(cosm, zout);
 	printf("tdyn: %g years\n", tdyn);
@@ -126,7 +128,7 @@ int main(int argc, char **argv)
 	sprintf(runname, "r000%d", irun);
 	//sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
@@ -691,7 +693,7 @@ int main(int argc, char **argv)
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
 //				log_lum_cent = log10(sfr/(4.4 *pow(10,-42)));
 				//printf("%lf\n", log_lum_cent);
-				if (log10(M_out) > 11 && sfr > 0)
+				if (log10(M_out) > 10 && sfr > 0)
 				{
 				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
@@ -788,7 +790,6 @@ int main(int argc, char **argv)
 						sfr_sat *= exp(-(t_Gyr)/t_quench);
 						double logsfr_sat = log10(sfr_sat);
 
-						//if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), logsfr_sat);
 						if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), logsfr_sat);
 						//printf("sfr: %lf\n", logsfr_sat);
 
@@ -801,7 +802,7 @@ int main(int argc, char **argv)
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
 			}
-			if (log10(M_out) > 11 && sfr > 0) 
+			if (log10(M_out) > 10 && sfr > 0) 
 			{
 				double logsfr = log10(sfr);
 				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));

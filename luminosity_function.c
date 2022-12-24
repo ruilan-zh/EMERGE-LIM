@@ -179,7 +179,6 @@ int main(int argc, char *argv[])
 		int big_count = 0;
 		int small_count = 0;
 		
-		/*
 		while(fgets(str, 256, fp_sat) != NULL)
 		{
 			if (i == arrlen)
@@ -214,7 +213,6 @@ int main(int argc, char *argv[])
 			}
 			k++;
 		}
-		*/
 		
 		
 		fclose(fp_sat);

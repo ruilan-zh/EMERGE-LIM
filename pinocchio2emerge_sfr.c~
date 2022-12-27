@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
 
 	int irun = 22;
-	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
+//	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
 //	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
@@ -96,11 +96,13 @@ int main(int argc, char **argv)
 
 //	double pmass = 1.59183 * 1e8; // N4096 500 Mpc/h (z=1.5)
 
-//	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47)
+//	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47, 0.4) - 8part
 
 //	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
-	double pmass = 1.02732 * 1e10; // N1100 1 Mpc (z=1.5,0.4)
+	//double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
+	double pmass = 3.04 * 1e8; // N1650 250 Mpc/h (z=1.5)
+
 
 
 	double min_part = 10;
@@ -110,7 +112,7 @@ int main(int argc, char **argv)
 	double min_hmass = pmass*min_part; 
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 0.4;
+	double zout = 1.5;
 	
 	double tdyn = t_dyn(cosm, zout);
 	printf("tdyn: %g years\n", tdyn);
@@ -128,7 +130,7 @@ int main(int argc, char **argv)
 	sprintf(runname, "r000%d", irun);
 	//sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1650/1.5/10part";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
@@ -537,7 +539,7 @@ int main(int argc, char **argv)
 					unsigned long long int id = histdata.name;
 					if (id != groupids[itree]) 
 					{
-						fprintf(stderr, "%lld != %lld for itree = %d", id, groupids[itree], itree);
+						fprintf(stderr, "%lld != %lld for itree = %d\n", id, groupids[itree], itree);
 						exit(1);
 					}
 				}
@@ -705,7 +707,7 @@ int main(int argc, char **argv)
 			// Compute sfr for satellites
 			if (log10(M_out) > 11.5)
 			{
-				double t_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+				double t_quench = 1*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 				//printf("t_quench: %lf\n", t_quench);
 				fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)

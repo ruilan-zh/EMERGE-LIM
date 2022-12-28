@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 	time_t now;
 	time(&now);
 	printf("%s\n", ctime(&now));
+	fflush(stdout);
 
 	Cosmology cosm;
 	cosm.omega = 0.3153;
@@ -98,10 +99,10 @@ int main(int argc, char **argv)
 
 //	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47, 0.4) - 8part
 
-//	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
+	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
 	//double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
-	double pmass = 3.04 * 1e8; // N1650 250 Mpc/h (z=1.5)
+//	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
 
 
 
@@ -127,11 +128,11 @@ int main(int argc, char **argv)
 
 	char runname[16], filename[256];
 
-	sprintf(runname, "r000%d", irun);
-	//sprintf(runname, "r00000");
+	//sprintf(runname, "r000%d", irun);
+	sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1650/1.5/10part";
-	//char dir[128] = "/mnt/data_cat4/moriwaki";
+	//char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+	char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
 	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
@@ -551,26 +552,33 @@ int main(int argc, char **argv)
 					double mass_sum = m1 + m2; //mass of resulting halo after merging
 					//printf("mass1:%lf\n", log10(mass_sum));
 					
-					redshifts[imw] = zmerger;
-					masses[imw] = m2;
-					
-					// if found = 1 then already have redshift bin so don't need to execute if statements
-					if (z1 == redshifts[imw] && found == 0)
+					if (zmerger <= z1) // ignore if redshift is higher than z(t-tdyn)
 					{
-						// if z1 equals the merger redshift 
-						index = imw;
-						equals = 1;
-						found = 1;
-					}
-					else if (z1 > redshifts[imw] && found == 0) 
-					{
-						// high redshift -> redshift
-						// if z1 is higher than merger redshift then it falls in between this redshift and the one before 
-						index = imw-1;
-						found = 1;
-						if (imw == 0) index = 0; //underestimates dynamical time
-					}
+						redshifts[imw] = zmerger;
+						masses[imw] = m2;
+						
+						// if found = 1 then already have redshift bin so don't need to execute if statements
+						if (z1 == zmerger && found == 0)
+						{
+							// if z1 equals the merger redshift 
+							index = imw;
+							equals = 1;
+							found = 1;
+						}
+						else if (z1 > zmerger && found == 0) 
+						{
+							// high redshift -> redshift
+							// if z1 is higher than merger redshift then it falls in between this redshift and the one before 
+							index = imw-1;
+							found = 1;
+							if (imw == 0) index = 0; //underestimates dynamical time
+						}
+						
 					
+									
+						imw++;
+					}
+				
 					if (logM_out > 11.5)
 					{
 						// before merging with main branch
@@ -579,8 +587,6 @@ int main(int argc, char **argv)
 						imw_sats[ibranch] ++;
 						M_host[ibranch] = m2;
 					}
-									
-					imw++;
 
 				}
 				else if (logM_out > 11.5)

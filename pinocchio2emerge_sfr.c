@@ -19,8 +19,8 @@ double rho_m(Cosmology cosm, double z);
 
 double t_dyn(Cosmology cosm, double z);
 double rvir_from_mvir(Cosmology cosm, double mvir_sol_h, double z);
-double my_t2z(double t_yr, Cosmology cosm);
-double my_z2t(double z, Cosmology cosm);
+double my_t2z(Cosmology cosm, double t_yr);
+double my_z2t(Cosmology cosm, double z);
 double rho_nfw(Cosmology cosm, double conc, double m_vir_sol_h, double r_vir, double r);
 double baryon_conversion_efficiency(double M, double z);
 
@@ -118,12 +118,12 @@ int main(int argc, char **argv)
 	double tdyn = t_dyn(cosm, zout);
 	printf("tdyn: %g years\n", tdyn);
 
-	double tout = my_z2t(zout, cosm);
+	double tout = my_z2t(cosm, zout);
 
 	double t1 = tout - tdyn;
 	printf("tout - tdyn: %g years\n", t1);
 
-	double z1 = my_t2z(t1, cosm);
+	double z1 = my_t2z(cosm, t1);
 	printf("z(tout - tdyn): %lf\n", z1);
 
 	char runname[16], filename[256];
@@ -138,13 +138,14 @@ int main(int argc, char **argv)
 	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char cat_dir[128] = "/mnt/data_cat4/moriwaki";
 
+	start = clock();
 	FILE *fp_cat;
 	char fname_cat[128];
 
 	sprintf(fname_cat, "%s/pinocchio.%.2f00.%s.catalog.out", dir, zout, runname);
 	printf("Opening file %s\n",fname_cat);
 
-	fflush(stdout)
+	fflush(stdout);
 
 	fp_cat = fopen(fname_cat, "r");
 	if (fp_cat==NULL)
@@ -169,6 +170,7 @@ int main(int argc, char **argv)
 		printf("This old version catalog does not give the number of slices used\n");
 
 	
+	fflush(stdout);
 	int arrlen = 100000;
 
 	unsigned long long int *groupids; //8 bytes
@@ -241,11 +243,15 @@ int main(int argc, char **argv)
 	fclose(fp_cat);
 	printf("nhalo in cat: %d\n", nhalo);
 
+	end = clock();
+     	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	printf("time taken to read cat: %lf s\n", cpu_time_used);
+
 	FILE *fp;
 
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
 	printf("Opening file %s\n", filename);
-	fflush(stdout)
+	fflush(stdout);
 
 	fp = fopen(filename, "r");
 
@@ -465,6 +471,19 @@ int main(int argc, char **argv)
 	double chabrier_factor = 0.88;
 	*/
 
+	/* satellite quenching time */
+	double tau_quench = 1*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+	double dt_quenched = 7*tau_quench*1e9;
+	double z_quench = my_t2z(cosm, tout - dt_quenched); 
+	double tdyn_quench = t_dyn(cosm, z_quench);
+	double t1_quench = tout - dt_quenched - tdyn_quench;
+	double z_sat_max = my_t2z(cosm, t1_quench);
+	printf("tau_quench: %lf\n", tau_quench);
+	printf("z_quench: %lf\n", z_quench);
+	printf("dt_quenched: %lf\n", dt_quenched);
+	printf("z_sat_max: %lf\n", z_sat_max);
+
+	start=clock();
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
 	{
 		u = fread(&dummy, sizeof(int), 1, fp);
@@ -501,6 +520,7 @@ int main(int argc, char **argv)
 			int mw_main[nbranch_tree];
 			double cBN;
 			double r_vir_out;
+			int sat_nonquench[nbranch_tree];
 
 			int *imw_sats;
 			imw_sats = (int*) malloc(nbranch_tree* sizeof(int));
@@ -535,6 +555,7 @@ int main(int argc, char **argv)
 
 				double m1 = histdata.mass * pmass; //mass of halo at merger
 				int mw = histdata.mw; // (larger) halo it merges with
+				double zmerger = histdata.zme; // redshift at merger 
 
 				if (ibranch == 0)
 				{
@@ -551,7 +572,7 @@ int main(int argc, char **argv)
 				{
 					mw_none = 0;
 					double m2 = histdata.mam *pmass; //mass of main halo it merges with at merger
-					double zmerger = histdata.zme; // redshift at merger 
+					//double zmerger = histdata.zme; // redshift at merger 
 					double mass_sum = m1 + m2; //mass of resulting halo after merging
 					//printf("mass1:%lf\n", log10(mass_sum));
 					
@@ -582,7 +603,7 @@ int main(int argc, char **argv)
 						imw++;
 					}
 				
-					if (logM_out > 11.5)
+					if (logM_out > 11.5 && zmerger <= z_sat_max)
 					{
 						// before merging with main branch
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
@@ -592,10 +613,9 @@ int main(int argc, char **argv)
 					}
 
 				}
-				else if (logM_out > 11.5)
+				else if (logM_out > 11.5 && zmerger <= z_sat_max)
 				{
 					
-					double zmerger = histdata.zme; // redshift at merger 
 					//for halo it merges with
 					double m2 = histdata.mam *pmass; //mass of main halo it merges with at merger
 					double mass_sum = m1 + m2; //mass of resulting halo after merging
@@ -605,9 +625,13 @@ int main(int argc, char **argv)
 					imw_sats[mw]++;
 
 					//for itself
-					redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
-					masses_sat[ibranch][imw_sats[ibranch]] = m1;
-					imw_sats[ibranch]++;
+					if (zmerger <= z_quench)
+					{
+						sat_nonquench[ibranch] = 1;
+						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
+						masses_sat[ibranch][imw_sats[ibranch]] = m1;
+						imw_sats[ibranch]++;
+					}
 
 					M_host[ibranch] = m2;
 				}
@@ -642,6 +666,7 @@ int main(int argc, char **argv)
 //			printf("b: %lf\n", sigma_e);
 			sigma_e = 0.2;
 			}
+			start = clock();
 			if (mw_none == 0)
 			{
 				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
@@ -710,14 +735,14 @@ int main(int argc, char **argv)
 				}
 				}
 			}
-			
+			end = clock();
+     			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+			//printf("assigning cents: %lf s\n", cpu_time_used);
+
 			start=clock();
-			
 			// Compute sfr for satellites
 			if (log10(M_out) > 11.5)
 			{
-				double t_quench = 1*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
-				//printf("t_quench: %lf\n", t_quench);
 				fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 			{
@@ -725,17 +750,18 @@ int main(int argc, char **argv)
 				double *redshifts_sat1 = redshifts_sat[ibranch];
 				double *masses_sat1 = masses_sat[ibranch];
 
+				double z_infall = redshifts_sat1[nmw_sat-1];
+				double M_infall = masses_sat1[nmw_sat-1];
 				
-				if ((nmw_sat > 1) && (log10(masses_sat1[nmw_sat-1]) > 10))
+				if (sat_nonquench[ibranch] == 1 && (nmw_sat > 1) && (log10(M_infall) > 10))
 				{
-					double z_infall = redshifts_sat1[nmw_sat-1];
-					double M_infall = masses_sat1[nmw_sat-1];
+					
 					//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
 					double tdyn = t_dyn(cosm, z_infall);
 
-					double t_merge = my_z2t(z_infall, cosm);
+					double t_merge = my_z2t(cosm, z_infall);
 					double t1_sat = t_merge - tdyn;
-					double z1_sat = my_t2z(t1_sat, cosm);
+					double z1_sat = my_t2z(cosm, t1_sat);
 					//printf("tdyn=%lf\n", tdyn/1E9);
 
 					double t = tout - t_merge;
@@ -798,7 +824,7 @@ int main(int argc, char **argv)
 						double sfr_sat = dmb_dt * e;
 					
 
-						sfr_sat *= exp(-(t_Gyr)/t_quench);
+						sfr_sat *= exp(-(t_Gyr)/tau_quench);
 						double logsfr_sat = log10(sfr_sat);
 
 						if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), logsfr_sat);
@@ -825,7 +851,9 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("I found %Ld trees and %Ld branches in the file\n", ntrees_tot, nbranch_tot);
-		
+	end = clock();
+     	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	printf("time taken to loop through merger trees and assign sfrs: %lf s\n", cpu_time_used);
 
 	fclose(fp);
 
@@ -916,7 +944,7 @@ double rvir_from_mvir(Cosmology cosm, double mvir_sol_h, double z)
 
 
 
-double my_t2z(double t_yr, Cosmology cosm)
+double my_t2z(Cosmology cosm, double t_yr)
 {
 	double tnow_ref = 13.7957 * pow(10,9); //from cosmology calculator for Planck 2018 cosmology
 	double tnow_cosm = ztotime((double)0, cosm)/ (H0*cosm.hubble*yr); // note this is not equal to 1 for z = 0
@@ -928,7 +956,7 @@ double my_t2z(double t_yr, Cosmology cosm)
 	return z;
 }
 
-double my_z2t(double z, Cosmology cosm)
+double my_z2t(Cosmology cosm, double z)
 {
 	double tnow_ref = 13.7957 * pow(10,9); //from cosmology calculator for Planck 2018 cosmology
 	double tnow_cosm = ztotime((double)0, cosm) / (H0*cosm.hubble*yr);

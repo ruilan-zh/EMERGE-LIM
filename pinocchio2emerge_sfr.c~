@@ -139,6 +139,8 @@ int main(int argc, char **argv)
 	//char cat_dir[128] = "/mnt/data_cat4/moriwaki";
 
 	start = clock();
+
+	/* Read catalog to get halo positions */
 	FILE *fp_cat;
 	char fname_cat[128];
 
@@ -169,8 +171,8 @@ int main(int argc, char **argv)
 	else
 		printf("This old version catalog does not give the number of slices used\n");
 
-	
 	fflush(stdout);
+
 	int arrlen = 100000;
 
 	unsigned long long int *groupids; //8 bytes
@@ -248,7 +250,6 @@ int main(int argc, char **argv)
 	printf("time taken to read cat: %lf s\n", cpu_time_used);
 
 	FILE *fp;
-
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
 	printf("Opening file %s\n", filename);
 	fflush(stdout);
@@ -289,18 +290,15 @@ int main(int argc, char **argv)
 	fprintf(fp_sfr, "# log10(mass[Msun/h]) x[Mpc/h] y[Mpc/h] z[Mpc/h] conc rvir[Mpc/h] log10(sfr[Msun/yr])\n");
 
 
-
 	FILE *fp_sfr_sat;
 	char fname_sfr_sat[32];
 	sprintf(fname_sfr_sat, "mass-sfr-sat.txt");
 	fp_sfr_sat = fopen(fname_sfr_sat, "w");
-
 	if (fp_sfr_sat==NULL)
 	{
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sat);
 		exit(1);
 	}
-
 	fprintf(fp_sfr_sat, "# satellites\n");
 	fprintf(fp_sfr_sat, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
@@ -308,18 +306,14 @@ int main(int argc, char **argv)
 	char fname_sfr_sum[32];
 	sprintf(fname_sfr_sum, "mass-sfr-sum.txt");
 	fp_sfr_sum = fopen(fname_sfr_sum, "w");
-
 	if (fp_sfr_sum==NULL)
 	{
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sum);
 		exit(1);
 	}
-
 	fprintf(fp_sfr_sum, "# satellites\n");
 	fprintf(fp_sfr_sum, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
-
-	double mhalo_now;
 
 	int n_table = 999;
 	double table_x[n_table];
@@ -565,7 +559,6 @@ int main(int argc, char **argv)
 				double m1 = histdata.mass * pmass; //mass of halo at merger
 				int mw = histdata.mw; // (larger) halo it merges with
 				double zmerger = histdata.zme; // redshift at merger 
-				/*
 
 				if (ibranch == 0)
 				{
@@ -645,11 +638,9 @@ int main(int argc, char **argv)
 
 					M_host[ibranch] = m2;
 				}
-			*/
 				
 				
 			}
-			/*
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("after reading: %lf s\n", cpu_time_used);
@@ -833,7 +824,6 @@ int main(int argc, char **argv)
 				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));
 				fprintf(fp_sfr_sum, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, logsfr);
 			}
-			*/
 
 		}
 		printf("\n");

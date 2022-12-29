@@ -139,6 +139,8 @@ int main(int argc, char **argv)
 	//char cat_dir[128] = "/mnt/data_cat4/moriwaki";
 
 	start = clock();
+
+	/* Read catalog to get halo positions */
 	FILE *fp_cat;
 	char fname_cat[128];
 
@@ -169,8 +171,8 @@ int main(int argc, char **argv)
 	else
 		printf("This old version catalog does not give the number of slices used\n");
 
-	
 	fflush(stdout);
+
 	int arrlen = 100000;
 
 	unsigned long long int *groupids; //8 bytes
@@ -248,7 +250,6 @@ int main(int argc, char **argv)
 	printf("time taken to read cat: %lf s\n", cpu_time_used);
 
 	FILE *fp;
-
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
 	printf("Opening file %s\n", filename);
 	fflush(stdout);
@@ -289,18 +290,15 @@ int main(int argc, char **argv)
 	fprintf(fp_sfr, "# log10(mass[Msun/h]) x[Mpc/h] y[Mpc/h] z[Mpc/h] conc rvir[Mpc/h] log10(sfr[Msun/yr])\n");
 
 
-
 	FILE *fp_sfr_sat;
 	char fname_sfr_sat[32];
 	sprintf(fname_sfr_sat, "mass-sfr-sat.txt");
 	fp_sfr_sat = fopen(fname_sfr_sat, "w");
-
 	if (fp_sfr_sat==NULL)
 	{
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sat);
 		exit(1);
 	}
-
 	fprintf(fp_sfr_sat, "# satellites\n");
 	fprintf(fp_sfr_sat, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
@@ -308,18 +306,14 @@ int main(int argc, char **argv)
 	char fname_sfr_sum[32];
 	sprintf(fname_sfr_sum, "mass-sfr-sum.txt");
 	fp_sfr_sum = fopen(fname_sfr_sum, "w");
-
 	if (fp_sfr_sum==NULL)
 	{
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sum);
 		exit(1);
 	}
-
 	fprintf(fp_sfr_sum, "# satellites\n");
 	fprintf(fp_sfr_sum, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
-
-	double mhalo_now;
 
 	int n_table = 999;
 	double table_x[n_table];
@@ -401,46 +395,6 @@ int main(int argc, char **argv)
 	}
 	fclose(fp_conc);
 
-	FILE *fp_etest;
-	char fname_etest[128];
-	sprintf(fname_etest, "etest0.5_2.txt");
-	printf("Opening file %s\n", fname_etest);
-
-	fp_etest = fopen(fname_etest, "r");
-	if (fp_etest==NULL)
-	{
-		printf("Error: file %s not found\n", fname_etest);
-		return 1;
-	}
-	
-	int nbins_e = 11;  
-	double Mmin_e = 11;
-	double dM_e = 0.2;
-
-	double *e_means;
-	e_means = (double*) malloc(nbins_e * sizeof(double));
-	double *e_sigmas;
-	e_sigmas = (double*) malloc(nbins_e * sizeof(double));
-
-	double *mass_bins_e;
-	mass_bins_e = (double*) malloc(nbins_e * sizeof(double));
-
-
-
-
-	char str_e[1024];
-	int ibin_e = 0;
-	while(fgets(str_e, 1024, fp_etest) != NULL)
-	{	
-		if (str_e[0] == '#') printf("%s\n", str_e);
-		else
-		{
-			sscanf(str_e, "%lf %lf %lf %*s", &mass_bins_e[ibin_e], &e_means[ibin_e], &e_sigmas[ibin_e]);
-			ibin_e++;
-		}
-	}
-	fclose(fp_etest);
-
 	double logMmin = 9.0;
 	double dlogM = 0.1;
 	printf("logMmin: %lf\n", logMmin);
@@ -482,6 +436,8 @@ int main(int argc, char **argv)
 	printf("z_quench: %lf\n", z_quench);
 	printf("dt_quenched: %lf\n", dt_quenched);
 	printf("z_sat_max: %lf\n", z_sat_max);
+
+	double sigma_e = 0.2;
 
 	double start_loop=clock();
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
@@ -656,25 +612,6 @@ int main(int argc, char **argv)
 			if (index == -1) index = imw-1; // default value, then in last bin (between second to last and last (output) redshift - z1 only higher than output redshift)
 			double Md; // M(t - tdyn)
 			double sfr = 0;
-//			if (log10(M_out/cosm.hubble) < 12.7) sigma_e = 0.6;
-//			else sigma_e = 0.4;
-			int ibin_e = (int)((log10(M_out/cosm.hubble) - Mmin_e)/dM_e);
-			double mean_e;
-			double sigma_e;
-			//printf("%lf\n", log10(M_out/cosm.hubble));
-			if (ibin_e >= 0 && ibin_e < nbins_e) 
-			{
-			//printf("ibin: %d\n", ibin_e);
-			mean_e = e_means[ibin_e];
-			//printf("%lf\n", mean_e);
-			mean_e = lin_interp(mass_bins_e, e_means, log10(M_out/cosm.hubble), ibin_e);
-			//printf("b: %lf\n", mean_e);
-			//sigma_e = e_sigmas[ibin_e];
-//			printf("sigma: %lf\n", sigma_e);
-			//sigma_e = lin_interp(mass_bins_e, e_sigmas, log10(M_out/cosm.hubble), ibin_e);
-//			printf("b: %lf\n", sigma_e);
-			sigma_e = 0.2;
-			}
 			start = clock();
 			if (mw_none == 0)
 			{
@@ -710,12 +647,6 @@ int main(int argc, char **argv)
 				e = pow(10,log_e);
 
 
-				//printf("mean_e: %g\n", mean_e);
-				//printf("c: %g\n", e);
-				//sigma_e = 0.2;
-
-
-				//printf("c: %g\n", e);
 
 				sfr = dmb_dt * e;
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;

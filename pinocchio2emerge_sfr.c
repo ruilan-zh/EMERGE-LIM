@@ -639,7 +639,6 @@ int main(int argc, char **argv)
 				double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
 				double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
 
-				
 				double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
 				double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
 

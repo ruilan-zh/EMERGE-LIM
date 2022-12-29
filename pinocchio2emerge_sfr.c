@@ -311,8 +311,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sum);
 		exit(1);
 	}
-	fprintf(fp_sfr_sum, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
-
+	fprintf(fp_sfr_sum, "# log10(mass[Msun/h]) x[Mpc/h] y[Mpc/h] z[Mpc/h] conc rvir[Mpc/h] log10(sfr[Msun/yr])\n");
 
 	int n_table = 999;
 	double table_x[n_table];
@@ -484,6 +483,8 @@ int main(int argc, char **argv)
 			int mw_main[nbranch_tree];
 			double cBN;
 			double r_vir_out;
+			int next = 0;
+			int first = 1;
 
 			int *sat_nonquench;
 			sat_nonquench = (int*) malloc(nbranch_tree* sizeof(int));
@@ -543,26 +544,30 @@ int main(int argc, char **argv)
 					double m2 = histdata.mam *pmass; //mass of main halo it merges with at merger
 					//double zmerger = histdata.zme; // redshift at merger 
 					
-					if (zmerger <= z1) // ignore if redshift is higher than z(t-tdyn)
+					// if found = 1 then already have redshift bin so don't need to execute if statements
+					if (found == 0)
 					{
 						redshifts[imw] = zmerger;
 						masses[imw] = m2;
-						
-						// if found = 1 then already have redshift bin so don't need to execute if statements
-						if (z1 == zmerger && found == 0)
+						if (z1 == zmerger)
 						{
 							// if z1 equals the merger redshift 
 							index = imw;
 							equals = 1;
 							found = 1;
 						}
-						else if (z1 > zmerger && found == 0) 
+						else if (z1 > zmerger) 
 						{
 							// high redshift -> redshift
 							// if z1 is higher than merger redshift then it falls in between this redshift and the one before 
 							index = imw-1;
 							found = 1;
-							if (imw == 0) index = 0; //underestimates dynamical time
+							if (imw == 0) // if no merger history at redshift higher than z(tout-tdyn)
+							{	
+								equals = 1;
+								index = 0; //underestimates change in mass 
+							}
+						
 						}
 						imw++;
 					}
@@ -615,39 +620,39 @@ int main(int argc, char **argv)
 				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
 				{
 
-				Md = M_dyn(masses, redshifts, index, z1, equals);
+					Md = M_dyn(masses, redshifts, index, z1, equals);
 
-				double dM_dt_dyn = (M_out - Md)/cosm.hubble/tdyn; 
+					double dM_dt_dyn = (M_out - Md)/cosm.hubble/tdyn; 
 
-				// convert concentration to Bryan and Norman virial concentration
-				double c179 = conc_ishiyama(logM_out, zout, mass_bins, z_bins, conc_arr);
-				double Delta179 = 179;
-				double x = omega_m(cosm, zout) - 1;
-				double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-				double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,zout);
-				cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, zout, zout, cubic_set, n_table, table_x, table_y);
+					// convert concentration to Bryan and Norman virial concentration
+					double c179 = conc_ishiyama(logM_out, zout, mass_bins, z_bins, conc_arr);
+					double Delta179 = 179;
+					double x = omega_m(cosm, zout) - 1;
+					double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
+					double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,zout);
+					cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, zout, zout, cubic_set, n_table, table_x, table_y);
 
-				r_vir_out = rvir_from_mvir(cosm, M_out, zout);
-				double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
-				double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
+					r_vir_out = rvir_from_mvir(cosm, M_out, zout);
+					double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
+					double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
 
-				
-				double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
-				double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
+					
+					double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
+					double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
 
-				double dM_dt = dM_dt_dyn - term2;
+					double dM_dt = dM_dt_dyn - term2;
 
-				double dmb_dt = f_b * dM_dt;
-				double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
-				
-				double log_e = gaussian_rand(log10(e), sigma_e);
-				e = pow(10,log_e);
+					double dmb_dt = f_b * dM_dt;
+					double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
+					
+					double log_e = gaussian_rand(log10(e), sigma_e);
+					e = pow(10,log_e);
 
-				sfr = dmb_dt * e;
-				if (logM_out > 10 && sfr > 0)
-				{
-				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
-				}
+					sfr = dmb_dt * e;
+					if (logM_out > 10 && sfr > 0)
+					{
+						fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
+					}
 				}
 			}
 			end = clock();

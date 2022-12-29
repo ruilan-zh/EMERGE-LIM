@@ -86,56 +86,6 @@ int main(int argc, char **argv)
 	hist histdata;
 
 
-	FILE *fp_zt;
-	char fname_zt[128];
-	sprintf(fname_zt, "z-t_planck18only.txt");
-	printf("Opening file %s\n", fname_zt);
-
-	fp_zt = fopen(fname_zt, "r");
-	if (fp_zt==NULL)
-	{
-		printf("Error: zt table file %s not found\n", fname_zt);
-		return 1;
-	}
-	
-	int nbins_zt = 130;  
-	printf("nbins_zt: %d\n", nbins_zt);
-
-	double *z_arr;
-	double *t_arr;
-	z_arr = (double*) malloc(nbins_zt * sizeof(double));
-	t_arr = (double*) malloc(nbins_zt * sizeof(double));
-
-	char str_zt[64];
-	int ibin_zt = 0;
-
-	while(fgets(str_zt, 1024, fp_zt) != NULL)
-	{	
-		if (str_zt[0] == '#') printf("%s\n", str_zt);
-		else
-		{
-			sscanf(str_zt, "%lf %lf", &z_arr[ibin_zt], &t_arr[ibin_zt]);
-			ibin_zt ++;
-		}
-	}
-	printf("ibin_zt: %d\n", ibin_zt);
-
-	if (ibin_zt != nbins_zt)
-	{
-		fprintf(stderr, "There are %d z bins in %s, but assigned %d bins\n",  ibin_zt, fname_zt, nbins_zt);
-		exit(1);
-	}
-	fclose(fp_zt);
-
-	double z0 = z_arr[0];
-	double t0 = t_arr[0];
-	double dt4z = 0.1;
-	printf("z0: %lf\n", z0);
-	printf("t0: %lf\n", t0);
-	printf("dt: %lf\n", dt4z);
-
-	fflush(stdout);
-
 	int irun = 22;
 //	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
@@ -180,18 +130,11 @@ int main(int argc, char **argv)
 
 	double tout = my_z2t(cosm, zout);
 
-
 	double t1 = tout - tdyn;
 	printf("tout - tdyn: %g years\n", t1);
 
 	double z1 = my_t2z(cosm, t1);
 	printf("z(tout - tdyn): %lf\n", z1);
-
-	ibin_zt = (int) (t0 - (t1/1e9))/(dt4z);
-	z1 = lin_interp(t_arr, z_arr, t1/1e9, ibin_zt);
-	printf("z(tout - tdyn): %lf\n", z1);
-
-	fflush(stdout);
 
 	char runname[16], filename[256];
 
@@ -755,9 +698,7 @@ int main(int argc, char **argv)
 
 						double t_merge = my_z2t(cosm, z_infall);
 						double t1_sat = t_merge - tdyn;
-						//double z1_sat = my_t2z(cosm, t1_sat);
-						ibin_zt = (int) (t0 - (t1_sat/1e9))/(dt4z);
-						double z1_sat = lin_interp(t_arr, z_arr, t1_sat/1e9, ibin_zt);
+						double z1_sat = my_t2z(cosm, t1_sat);
 						//printf("tdyn=%lf\n", tdyn/1E9);
 
 						double t = tout - t_merge;

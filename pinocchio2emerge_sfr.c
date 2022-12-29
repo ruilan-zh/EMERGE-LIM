@@ -41,7 +41,7 @@ double M_dyn(double masses[], double redshifts[], int index, double z1, int equa
 
 double tau(Cosmology cosm, double M_star_msun_h, double z) ;
 double mhalo2mstar(Cosmology cosm, double M_halo_msun_h, double z);
-double conc_ishiyama(double logM, double z, double mass_bins[], double z_bins[], double **conc_arr);
+double conc_interp(double logM, double z, double mass_bins[], double z_bins[], double **conc_arr);
 
 double sfr2mstar(Cosmology cosm, double sfr, double z);
 
@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 
 	/* satellite quenching time */
 	double tau_quench = 1*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
-	double dt_quenched = 7*tau_quench*1e9;
+	double dt_quenched = 8*tau_quench*1e9; 
 	double z_quench = my_t2z(cosm, tout - dt_quenched); 
 	double tdyn_quench = t_dyn(cosm, z_quench);
 	double t1_quench = tout - dt_quenched - tdyn_quench;
@@ -435,7 +435,14 @@ int main(int argc, char **argv)
 	printf("dt_quenched: %lf\n", dt_quenched);
 	printf("z_sat_max: %lf\n", z_sat_max);
 
-	double sigma_e = 0.2;
+	if (z_sat_max > 6) printf("z_sat_max %lf > max z for conc table!", z_sat_max);
+
+	double Delta179 = 179;
+	double x_out = omega_m(cosm, zout) - 1;
+	double Delta_vir_crit_out = (18 * pow(M_PI,2)) + (82.0 * x_out) - (39.0 * pow(x_out,2)); // Bryan & Norman
+	double Delta_vir_BN_out = Delta_vir_crit_out / omega_m(cosm,zout);
+
+	double sigma_e = 0.2; // std of baryon conversion efficiency
 
 	double start_loop=clock();
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
@@ -615,44 +622,39 @@ int main(int argc, char **argv)
 			double Md; // M(t - tdyn)
 			double sfr = 0;
 			start = clock();
-			if (mw_none == 0)
+		
+			if (found == 1) // if we have merger history info 
 			{
-				if (redshifts[0] > z1) // if we have merger history for redshift greater than z1 = z(t-tdyn)
+
+				Md = M_dyn(masses, redshifts, index, z1, equals);
+
+				double dM_dt_dyn = (M_out - Md)/cosm.hubble/tdyn; 
+
+				// convert concentration to Bryan and Norman virial concentration
+				double c179 = conc_interp(logM_out, zout, mass_bins, z_bins, conc_arr);
+				
+				cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN_out, zout, zout, cubic_set, n_table, table_x, table_y);
+
+				r_vir_out = rvir_from_mvir(cosm, M_out, zout);
+				double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
+				double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
+
+				
+				double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
+				double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
+
+				double dM_dt = dM_dt_dyn - term2;
+
+				double dmb_dt = f_b * dM_dt;
+				double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
+				
+				double log_e = gaussian_rand(log10(e), sigma_e);
+				e = pow(10,log_e);
+
+				sfr = dmb_dt * e;
+				if (logM_out > 10 && sfr > 0)
 				{
-
-					Md = M_dyn(masses, redshifts, index, z1, equals);
-
-					double dM_dt_dyn = (M_out - Md)/cosm.hubble/tdyn; 
-
-					// convert concentration to Bryan and Norman virial concentration
-					double c179 = conc_ishiyama(logM_out, zout, mass_bins, z_bins, conc_arr);
-					double Delta179 = 179;
-					double x = omega_m(cosm, zout) - 1;
-					double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-					double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,zout);
-					cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, zout, zout, cubic_set, n_table, table_x, table_y);
-
-					r_vir_out = rvir_from_mvir(cosm, M_out, zout);
-					double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
-					double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
-
-					
-					double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
-					double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
-
-					double dM_dt = dM_dt_dyn - term2;
-
-					double dmb_dt = f_b * dM_dt;
-					double e = baryon_conversion_efficiency(M_out/cosm.hubble, zout);
-					
-					double log_e = gaussian_rand(log10(e), sigma_e);
-					e = pow(10,log_e);
-
-					sfr = dmb_dt * e;
-					if (logM_out > 10 && sfr > 0)
-					{
-						fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
-					}
+					fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
 			}
 			end = clock();
@@ -674,7 +676,7 @@ int main(int argc, char **argv)
 					double M_infall = masses_sat1[nmw_sat-1];
 					
 					double logM_infall = log10(M_infall);
-					if (sat_nonquench[ibranch] == 1 && (nmw_sat > 1) && (logM_infall > 10))
+					if (sat_nonquench[ibranch] == 1 && (logM_infall > 10))
 					{
 						
 						//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
@@ -690,14 +692,15 @@ int main(int argc, char **argv)
 						double t_Gyr = t/1E9;
 
 						//printf("t=%lf Gyr\n", t_Gyr);
-						if (z1_sat < 6.0 && z1_sat < redshifts_sat1[0])
+						if (z1_sat < redshifts_sat1[0])
 						{
 							int index1;
 							for (int iz=0; iz < nmw_sat; iz++)
 							{
-								if (z1_sat < redshifts_sat1[iz])
+								if (z1_sat > redshifts_sat1[iz])
 								{
 									index1 = iz - 1;
+									equals = 0;
 									break;
 								}
 								else if (z1_sat == redshifts_sat1[iz])
@@ -712,9 +715,7 @@ int main(int argc, char **argv)
 							Md = M_dyn(masses_sat1, redshifts_sat1, index1, z1_sat, equals);
 							double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
 
-
-							double c179 = conc_ishiyama(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
-							double Delta179 = 179;
+							double c179 = conc_interp(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
 							double x = omega_m(cosm, z_infall) - 1;
 							double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
 							double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z_infall);
@@ -1053,7 +1054,7 @@ double M_pseudo(Cosmology cosm, double Mi_pinocchio, double zi, double zf, doubl
 {
 
 	double logMi_pinocchio = log10(Mi_pinocchio);
-	double c35 = conc_ishiyama(logMi_pinocchio, zi, mass_bins, z_bins, conc_arr);
+	double c35 = conc_interp(logMi_pinocchio, zi, mass_bins, z_bins, conc_arr);
 //	printf("%lf\n", ci);
 	double Delta35 = 35;
 	double f_a = 0.25;
@@ -1106,7 +1107,7 @@ double M_pinocchio2vir(Cosmology cosm, double M_pinocchio, double z, double *cub
 //	printf("Delta_vir_BN: %lf\n", Delta_vir_BN);
 	double logM_pinocchio = log10(M_pinocchio);
 	
-	double c35 = conc_ishiyama(logM_pinocchio, z, mass_bins, z_bins, conc_arr); // conc for this Delta
+	double c35 = conc_interp(logM_pinocchio, z, mass_bins, z_bins, conc_arr); // conc for this Delta
 	double b = 0.2; //linking length
 	double Delta_pinocchio = 9 / (2 * M_PI * pow(b,3));
 	//printf("Delta_pinocchio: %lf\n", Delta_pinocchio);
@@ -1222,7 +1223,7 @@ double sfr2mstar(Cosmology cosm, double sfr, double z)
 
 }
 
-double conc_ishiyama(double logM, double z, double mass_bins[], double z_bins[], double **conc_arr)
+double conc_interp(double logM, double z, double mass_bins[], double z_bins[], double **conc_arr)
 {
 
 	double logMmin = mass_bins[0];

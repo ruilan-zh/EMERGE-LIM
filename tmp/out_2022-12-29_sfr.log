@@ -29,4 +29,8 @@ dt_quenched: 1770875489.694293
 z_sat_max: 3.047171
 Ntrees: 267488051
 Nbranches: 540885605
-.....
+...........
+I found 267488051 trees and 540885605 branches in the file
+time taken to loop through merger trees and assign sfrs: 1370.891680 s
+Thu Dec 29 19:13:01 2022
+

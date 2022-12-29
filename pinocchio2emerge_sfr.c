@@ -483,7 +483,7 @@ int main(int argc, char **argv)
 	printf("dt_quenched: %lf\n", dt_quenched);
 	printf("z_sat_max: %lf\n", z_sat_max);
 
-	start=clock();
+	double start_loop=clock();
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
 	{
 		u = fread(&dummy, sizeof(int), 1, fp);
@@ -496,10 +496,19 @@ int main(int argc, char **argv)
 		printf("Ntrees: %d\n", ntrees);
 		printf("Nbranches: %d\n", nbranch);
 
+		int cp10 = (int) ntrees/10;
+		int counter = 0;
 
 		int imass;
 		for (int itree = 0; itree < ntrees; itree++)
 		{
+			if (itree == cp10*counter)
+			{	
+				printf(".");
+				counter++;
+			}
+			fflush(stdout);
+
 			u = fread(&dummy, sizeof(int), 1, fp);
 			u = fread(&thistree, sizeof(int), 1, fp);
 			u = fread(&nbranch_tree, sizeof(int), 1, fp);
@@ -704,26 +713,9 @@ int main(int argc, char **argv)
 				//printf("mean_e: %g\n", mean_e);
 				//printf("c: %g\n", e);
 				//sigma_e = 0.2;
-				/*
-				if (ibin_e >= 0 && ibin_e < nbins_e) 
-				{
-					double log_e = gaussian_rand(mean_e, sigma_e);
-					e = pow(10.0,log_e);
-				}
-				*/
 
 
 				//printf("c: %g\n", e);
-				/*
-				if (log10(M_out/cosm.hubble) < 12.7&& log10(M_out/cosm.hubble) > 12.1) e = pow(10, log10(e)-0.1); 
-				else if (log10(M_out/cosm.hubble) < 12.1&& log10(M_out/cosm.hubble) > 11.7) e = pow(10, log10(e)-0.05); 
-				else if (log10(M_out/cosm.hubble) < 12.1&& log10(M_out/cosm.hubble) > 12.7) e = pow(10, log10(e)+0.05); 
-				
-				*/
-				/*
-				e = gaussian_rand(log10(e), sigma_e);
-				e = pow(10,e);
-				*/
 
 				sfr = dmb_dt * e;
 //				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
@@ -814,13 +806,6 @@ int main(int argc, char **argv)
 						e = gaussian_rand(log10(e), sigma_e);
 						e = pow(10,e);
 	
-						/*
-						if (ibin_e >= 0 && ibin_e < nbins_e) 
-						{
-							double mean_log_e = gaussian_rand(mean_e, sigma_e);
-							e = pow(10,mean_log_e);
-						}
-						*/
 						double sfr_sat = dmb_dt * e;
 					
 
@@ -845,14 +830,13 @@ int main(int argc, char **argv)
 				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));
 				fprintf(fp_sfr_sum, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, logsfr);
 			}
-		
-			
 
 		}
+		printf("\n");
 	}
 	printf("I found %Ld trees and %Ld branches in the file\n", ntrees_tot, nbranch_tot);
 	end = clock();
-     	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+     	cpu_time_used = ((double) (end - start_loop)) / CLOCKS_PER_SEC;
 	printf("time taken to loop through merger trees and assign sfrs: %lf s\n", cpu_time_used);
 
 	fclose(fp);

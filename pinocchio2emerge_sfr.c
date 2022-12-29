@@ -311,7 +311,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "cannot open file: %s\n", fname_sfr_sum);
 		exit(1);
 	}
-	fprintf(fp_sfr_sum, "# satellites\n");
 	fprintf(fp_sfr_sum, "# log10(mass[Msun/h]) log10(sfr[Msun/yr])\n");
 
 
@@ -485,7 +484,13 @@ int main(int argc, char **argv)
 			int mw_main[nbranch_tree];
 			double cBN;
 			double r_vir_out;
-			int sat_nonquench[nbranch_tree];
+
+			int *sat_nonquench;
+			sat_nonquench = (int*) malloc(nbranch_tree* sizeof(int));
+			for (int i = 0; i < nbranch_tree; i++)
+			{
+				sat_nonquench[i] = 0;
+			}
 
 			int *imw_sats;
 			imw_sats = (int*) malloc(nbranch_tree* sizeof(int));
@@ -508,7 +513,6 @@ int main(int argc, char **argv)
 				redshifts_sat[ibranch] = (double*) malloc((nbranch_tree) * sizeof(double));
 			}
 
-			double M_host[nbranch_tree];
 			double logM_out;
 
 			start = clock();
@@ -538,8 +542,6 @@ int main(int argc, char **argv)
 					mw_none = 0;
 					double m2 = histdata.mam *pmass; //mass of main halo it merges with at merger
 					//double zmerger = histdata.zme; // redshift at merger 
-					double mass_sum = m1 + m2; //mass of resulting halo after merging
-					//printf("mass1:%lf\n", log10(mass_sum));
 					
 					if (zmerger <= z1) // ignore if redshift is higher than z(t-tdyn)
 					{
@@ -562,19 +564,16 @@ int main(int argc, char **argv)
 							found = 1;
 							if (imw == 0) index = 0; //underestimates dynamical time
 						}
-						
-					
-									
 						imw++;
 					}
 				
 					if (logM_out > 11.5 && zmerger <= z_sat_max)
 					{
 						// before merging with main branch
+						sat_nonquench[ibranch] = 1;
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
 						masses_sat[ibranch][imw_sats[ibranch]] = m1;
 						imw_sats[ibranch] ++;
-						M_host[ibranch] = m2;
 					}
 
 				}
@@ -583,7 +582,6 @@ int main(int argc, char **argv)
 					
 					//for halo it merges with
 					double m2 = histdata.mam *pmass; //mass of main halo it merges with at merger
-					double mass_sum = m1 + m2; //mass of resulting halo after merging
 					
 					redshifts_sat[mw][imw_sats[mw]] = zmerger;
 					masses_sat[mw][imw_sats[mw]] = m2;
@@ -598,7 +596,6 @@ int main(int argc, char **argv)
 						imw_sats[ibranch]++;
 					}
 
-					M_host[ibranch] = m2;
 				}
 				
 				
@@ -646,13 +643,8 @@ int main(int argc, char **argv)
 				double log_e = gaussian_rand(log10(e), sigma_e);
 				e = pow(10,log_e);
 
-
-
 				sfr = dmb_dt * e;
-//				double log_lum_cent = (log10(sfr*chabrier_factor) + log_eta_ha)/e_ha;
-//				log_lum_cent = log10(sfr/(4.4 *pow(10,-42)));
-				//printf("%lf\n", log_lum_cent);
-				if (log10(M_out) > 10 && sfr > 0)
+				if (logM_out > 10 && sfr > 0)
 				{
 				fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
@@ -664,102 +656,103 @@ int main(int argc, char **argv)
 
 			start=clock();
 			// Compute sfr for satellites
-			if (log10(M_out) > 11.5)
+			if (logM_out > 11.5)
 			{
-				fprintf(fp_sfr_sat, "# %lf\n", log10(M_out));
-			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
-			{
-				int nmw_sat = imw_sats[ibranch];
-				double *redshifts_sat1 = redshifts_sat[ibranch];
-				double *masses_sat1 = masses_sat[ibranch];
-
-				double z_infall = redshifts_sat1[nmw_sat-1];
-				double M_infall = masses_sat1[nmw_sat-1];
-				
-				if (sat_nonquench[ibranch] == 1 && (nmw_sat > 1) && (log10(M_infall) > 10))
+				fprintf(fp_sfr_sat, "# %lf\n", logM_out);
+				for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 				{
+					int nmw_sat = imw_sats[ibranch];
+					double *redshifts_sat1 = redshifts_sat[ibranch];
+					double *masses_sat1 = masses_sat[ibranch];
+
+					double z_infall = redshifts_sat1[nmw_sat-1];
+					double M_infall = masses_sat1[nmw_sat-1];
 					
-					//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
-					double tdyn = t_dyn(cosm, z_infall);
-
-					double t_merge = my_z2t(cosm, z_infall);
-					double t1_sat = t_merge - tdyn;
-					double z1_sat = my_t2z(cosm, t1_sat);
-					//printf("tdyn=%lf\n", tdyn/1E9);
-
-					double t = tout - t_merge;
-
-					double t_Gyr = t/1E9;
-
-					//printf("t=%lf Gyr\n", t_Gyr);
-					if (z1_sat < 6.0 && z1_sat < redshifts_sat1[0])
+					double logM_infall = log10(M_infall);
+					if (sat_nonquench[ibranch] == 1 && (nmw_sat > 1) && (logM_infall > 10))
 					{
-						int index1;
-						for (int iz=0; iz < nmw_sat; iz++)
+						
+						//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
+						double tdyn = t_dyn(cosm, z_infall);
+
+						double t_merge = my_z2t(cosm, z_infall);
+						double t1_sat = t_merge - tdyn;
+						double z1_sat = my_t2z(cosm, t1_sat);
+						//printf("tdyn=%lf\n", tdyn/1E9);
+
+						double t = tout - t_merge;
+
+						double t_Gyr = t/1E9;
+
+						//printf("t=%lf Gyr\n", t_Gyr);
+						if (z1_sat < 6.0 && z1_sat < redshifts_sat1[0])
 						{
-							if (z1_sat < redshifts_sat1[iz])
+							int index1;
+							for (int iz=0; iz < nmw_sat; iz++)
 							{
-								index1 = iz - 1;
-								break;
+								if (z1_sat < redshifts_sat1[iz])
+								{
+									index1 = iz - 1;
+									break;
+								}
+								else if (z1_sat == redshifts_sat1[iz])
+								{
+									index1 = iz;
+									equals = 1;
+									break;
+								}
 							}
-							else if (z1_sat == redshifts_sat1[iz])
-							{
-								index1 = iz;
-								equals = 1;
-								break;
-							}
+
+
+							Md = M_dyn(masses_sat1, redshifts_sat1, index1, z1_sat, equals);
+							double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
+
+
+							double c179 = conc_ishiyama(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
+							double Delta179 = 179;
+							double x = omega_m(cosm, z_infall) - 1;
+							double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
+							double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z_infall);
+							double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
+
+							double r_vir_infall = rvir_from_mvir(cosm, M_infall, z_infall);
+							double rho_vir_infall = rho_nfw(cosm, cBN_sat, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
+							double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
+							
+							double dR_dt_dyn = (r_vir_infall - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
+							double term2 = 4 * M_PI * r_vir_infall*r_vir_infall * rho_vir_infall * dR_dt_dyn / Msun;  
+							double dM_dt = dM_dt_dyn - term2; // [Msun/yr]
+
+
+							double dmb_dt = f_b * dM_dt;
+							double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
+							e = gaussian_rand(log10(e), sigma_e);
+							e = pow(10,e);
+		
+							double sfr_sat = dmb_dt * e;
+
+							sfr_sat *= exp(-(t_Gyr)/tau_quench);
+							double logsfr_sat = log10(sfr_sat);
+
+							if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
+							//printf("sfr: %lf\n", logsfr_sat);
+
+							if (sfr_sat> 0) sfr += sfr_sat;
 						}
 
-						double logM_infall = log10(M_infall);
-
-						Md = M_dyn(masses_sat1, redshifts_sat1, index1, z1_sat, equals);
-						double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
-
-
-						double c179 = conc_ishiyama(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
-						double Delta179 = 179;
-						double x = omega_m(cosm, z_infall) - 1;
-						double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-						double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z_infall);
-						double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
-
-						double r_vir_infall = rvir_from_mvir(cosm, M_infall, z_infall);
-						double rho_vir_infall = rho_nfw(cosm, cBN_sat, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
-						double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
-						
-						double dR_dt_dyn = (r_vir_infall - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
-						double term2 = 4 * M_PI * r_vir_infall*r_vir_infall * rho_vir_infall * dR_dt_dyn / Msun;  
-						double dM_dt = dM_dt_dyn - term2; // [Msun/yr]
-
-
-						double dmb_dt = f_b * dM_dt;
-						double e = baryon_conversion_efficiency(M_infall/cosm.hubble, z_infall);
-						e = gaussian_rand(log10(e), sigma_e);
-						e = pow(10,e);
-	
-						double sfr_sat = dmb_dt * e;
-					
-
-						sfr_sat *= exp(-(t_Gyr)/tau_quench);
-						double logsfr_sat = log10(sfr_sat);
-
-						if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", log10(M_out), logsfr_sat);
-						//printf("sfr: %lf\n", logsfr_sat);
-
-						if (sfr_sat> 0) sfr += sfr_sat;
 					}
-
 				}
+				
 			}
 			end = clock();
-     			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
-			}
-			if (log10(M_out) > 10 && sfr > 0) 
+			
+			if (logM_out > 10 && sfr > 0) 
 			{
 				double logsfr = log10(sfr);
-				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", log10(M_out), log10(sfr));
-				fprintf(fp_sfr_sum, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, logsfr);
+				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", logM_out, log10(sfr));
+				fprintf(fp_sfr_sum, "%lf %lf %lf %lf %lf %lf %lf\n", logM_out, pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, logsfr);
 			}
 
 		}

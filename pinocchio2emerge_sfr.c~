@@ -86,35 +86,36 @@ int main(int argc, char **argv)
 	hist histdata;
 
 
-	FILE *fp_zt;
-	char fname_zt[128];
-	sprintf(fname_zt, "z-t_planck18only.txt");
-	printf("Opening file %s\n", fname_zt);
+	// reading from t2z table
+	FILE *fp_t2z;
+	char fname_t2z[128];
+	sprintf(fname_t2z, "t2z_planck18only.txt");
+	printf("Opening file %s\n", fname_t2z);
 
-	fp_zt = fopen(fname_zt, "r");
-	if (fp_zt==NULL)
+	fp_t2z = fopen(fname_t2z, "r");
+	if (fp_t2z==NULL)
 	{
-		printf("Error: zt table file %s not found\n", fname_zt);
+		printf("Error: t2z table file %s not found\n", fname_t2z);
 		return 1;
 	}
 	
 	int nbins_zt = 130;  
 	printf("nbins_zt: %d\n", nbins_zt);
 
-	double *z_arr;
-	double *t_arr;
-	z_arr = (double*) malloc(nbins_zt * sizeof(double));
-	t_arr = (double*) malloc(nbins_zt * sizeof(double));
+	double *t2z_z;
+	double *t2z_t;
+	t2z_z = (double*) malloc(nbins_zt * sizeof(double));
+	t2z_t = (double*) malloc(nbins_zt * sizeof(double));
 
-	char str_zt[64];
+	char str_t2z[64];
 	int ibin_zt = 0;
 
-	while(fgets(str_zt, 1024, fp_zt) != NULL)
+	while(fgets(str_t2z, 1024, fp_t2z) != NULL)
 	{	
-		if (str_zt[0] == '#') printf("%s\n", str_zt);
+		if (str_t2z[0] == '#') printf("%s\n", str_t2z);
 		else
 		{
-			sscanf(str_zt, "%lf %lf", &z_arr[ibin_zt], &t_arr[ibin_zt]);
+			sscanf(str_t2z, "%lf %lf", &t2z_z[ibin_zt], &t2z_t[ibin_zt]);
 			ibin_zt ++;
 		}
 	}
@@ -122,17 +123,66 @@ int main(int argc, char **argv)
 
 	if (ibin_zt != nbins_zt)
 	{
-		fprintf(stderr, "There are %d z bins in %s, but assigned %d bins\n",  ibin_zt, fname_zt, nbins_zt);
+		fprintf(stderr, "There are %d z bins in %s, but assigned %d bins\n",  ibin_zt, fname_t2z, nbins_zt);
 		exit(1);
 	}
-	fclose(fp_zt);
+	fclose(fp_t2z);
 
-	double z0 = z_arr[0];
-	double t0 = t_arr[0];
-	double dt4z = 0.1;
-	printf("z0: %lf\n", z0);
-	printf("t0: %lf\n", t0);
-	printf("dt: %lf\n", dt4z);
+	double t2z_z0 = t2z_z[0];
+	double t2z_t0 = t2z_t[0];
+	double t2z_dt = t2z_t[0] - t2z_t[1];
+	printf("t2z_z0: %lf\n", t2z_z0);
+	printf("t2z_t0: %lf\n", t2z_t0);
+	printf("dt: %lf\n", t2z_dt);
+
+	fflush(stdout);
+
+	FILE *fp_z2t;
+	char fname_z2t[128];
+	sprintf(fname_z2t, "z2t_planck18only.txt");
+	printf("Opening file %s\n", fname_z2t);
+
+	fp_z2t = fopen(fname_z2t, "r");
+	if (fp_z2t==NULL)
+	{
+		printf("Error: z2t table file %s not found\n", fname_z2t);
+		return 1;
+	}
+	
+	double *z2t_z, *z2t_t, *z2t_a;
+	z2t_z = (double*) malloc(nbins_zt * sizeof(double));
+	z2t_t = (double*) malloc(nbins_zt * sizeof(double));
+	z2t_a = (double*) malloc(nbins_zt * sizeof(double));
+
+	char str_z2t[64];
+	ibin_zt = 0;
+
+	while(fgets(str_z2t, 1024, fp_z2t) != NULL)
+	{	
+		if (str_z2t[0] == '#') printf("%s\n", str_z2t);
+		else
+		{
+			sscanf(str_z2t, "%lf %lf %lf", &z2t_a[ibin_zt], &z2t_z[ibin_zt], &z2t_t[ibin_zt]);
+			ibin_zt ++;
+		}
+	}
+	printf("ibin_zt: %d\n", ibin_zt);
+
+	if (ibin_zt != nbins_zt)
+	{
+		fprintf(stderr, "There are %d z bins in %s, but assigned %d bins\n",  ibin_zt, fname_z2t, nbins_zt);
+		exit(1);
+	}
+	fclose(fp_z2t);
+
+	double z2t_z0 = z2t_z[0];
+	double a0 = z2t_a[0];
+	double z2t_t0 = z2t_t[0];
+	double da = z2t_a[0] - z2t_a[1];
+	printf("z2t_a0: %lf\n", a0);
+	printf("z2t_z0: %lf\n", z2t_z0);
+	printf("z2t_t0: %lf\n", z2t_t0);
+	printf("da: %lf\n", da);
 
 	fflush(stdout);
 
@@ -179,7 +229,16 @@ int main(int argc, char **argv)
 	printf("tdyn: %g years\n", tdyn);
 
 	double tout = my_z2t(cosm, zout);
+	printf("tout: %lf\n", tout);
+	double a = 1.0/(zout+1);
+	printf("zout: %lf\n", zout);
+	printf("a: %lf\n", a);
+	printf("a: %lf\n", (a0-a)/da);
 
+	ibin_zt = (int) ((a0 - a)/da);
+	printf("ibin_zt: %d\n", ibin_zt);
+	tout = lin_interp(z2t_z, z2t_t, zout, ibin_zt)*1e9;
+	printf("tout: %lf\n", tout);
 
 	double t1 = tout - tdyn;
 	printf("tout - tdyn: %g years\n", t1);
@@ -187,8 +246,8 @@ int main(int argc, char **argv)
 	double z1 = my_t2z(cosm, t1);
 	printf("z(tout - tdyn): %lf\n", z1);
 
-	ibin_zt = (int) (t0 - (t1/1e9))/(dt4z);
-	z1 = lin_interp(t_arr, z_arr, t1/1e9, ibin_zt);
+	ibin_zt = (int) ((t2z_t0 - (t1/1e9))/(t2z_dt));
+	z1 = lin_interp(t2z_t, t2z_z, t1/1e9, ibin_zt);
 	printf("z(tout - tdyn): %lf\n", z1);
 
 	fflush(stdout);
@@ -525,7 +584,7 @@ int main(int argc, char **argv)
 		int counter = 0;
 
 		int imass;
-		for (int itree = 0; itree < ntrees/10; itree++)
+		for (int itree = 0; itree < 10; itree++)
 		{
 			if (itree == cp10*counter)
 			{	
@@ -753,11 +812,20 @@ int main(int argc, char **argv)
 
 						double tdyn = t_dyn(cosm, z_infall, Delta_vir_crit, Ez);
 
-						double t_merge = my_z2t(cosm, z_infall);
+						//double t_merge = my_z2t(cosm, z_infall);	
+//						printf("z_infall: %lf\n", z_infall);
+					//	printf("t_merge: %lf\n", t_merge);
+						double a = 1.0/(z_infall+1);
+
+						ibin_zt = (int) ((a0 - a)/da);
+						//printf("ibin_zt: %d\n", ibin_zt);
+						double t_merge = lin_interp(z2t_z, z2t_t, z_infall, ibin_zt)*1e9;
+					//	printf("t_merge: %lf\n", t_merge);
+
 						double t1_sat = t_merge - tdyn;
 						//double z1_sat = my_t2z(cosm, t1_sat);
-						ibin_zt = (int) (t0 - (t1_sat/1e9))/(dt4z);
-						double z1_sat = lin_interp(t_arr, z_arr, t1_sat/1e9, ibin_zt);
+						ibin_zt = (int) (t2z_t0 - (t1_sat/1e9))/(t2z_dt);
+						double z1_sat = lin_interp(t2z_t, t2z_z, t1_sat/1e9, ibin_zt);
 						//printf("tdyn=%lf\n", tdyn/1E9);
 
 						double t = tout - t_merge;

@@ -1,4 +1,4 @@
-Thu Dec 29 19:46:32 2022
+Thu Dec 29 19:57:14 2022
 
 Min halo mass: 9.467633
 tdyn: 6.73499e+08 years
@@ -8,7 +8,7 @@ Opening file /mnt/data_cat4/moriwaki/pinocchio.1.5000.r00000.catalog.out
 The file has been written by 1456 tasks
 The box has been fragmented in 1 slices
 nhalo in cat: 267488051
-time taken to read cat: 31.392232 s
+time taken to read cat: 31.418767 s
 Opening file /mnt/data_cat4/moriwaki/pinocchio.r00000.histories.out
 The run used 1 slices
 Opening file conc_diemer.txt
@@ -29,4 +29,8 @@ dt_quenched: 2023857702.507763
 z_sat_max: 3.347292
 Ntrees: 267488051
 Nbranches: 540885605
-...
+.
+I found 267488051 trees and 540885605 branches in the file
+time taken to loop through merger trees and assign sfrs: 145.571379 s
+Thu Dec 29 20:00:16 2022
+

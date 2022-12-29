@@ -13,12 +13,12 @@
 #include "mt19937ar.h"
 
 double E_z(Cosmology cosm, double z);
-double omega_m(Cosmology cosm, double z);
-double rho_crit(Cosmology cosm, double z);
-double rho_m(Cosmology cosm, double z);
+double omega_m(Cosmology cosm, double z, double Ez);
+double rho_crit(Cosmology cosm, double z, double Ez);
+double rho_m(Cosmology cosm, double z, double Ez);
 
-double t_dyn(Cosmology cosm, double z);
-double rvir_from_mvir(Cosmology cosm, double mvir_sol_h, double z);
+double t_dyn(Cosmology cosm, double z, double Delta_vir_crit, double Ez);
+double mvir2rvir(Cosmology cosm, double mvir_sol_h, double z, double Delta_vir, double rho_mean);
 double my_t2z(Cosmology cosm, double t_yr);
 double my_z2t(Cosmology cosm, double z);
 double rho_nfw(Cosmology cosm, double conc, double m_vir_sol_h, double r_vir, double r);
@@ -115,7 +115,17 @@ int main(int argc, char **argv)
 
 	double zout = 1.5;
 	
-	double tdyn = t_dyn(cosm, zout);
+	double Ez_out = E_z(cosm, zout);
+	double rho_mean_out = rho_m(cosm, zout, Ez_out);
+
+	double Delta179 = 179;
+	double Om_out = omega_m(cosm, zout, Ez_out); 
+	double x_out = Om_out - 1;
+	double Delta_vir_crit_out = (18 * pow(M_PI,2)) + (82.0 * x_out) - (39.0 * pow(x_out,2)); // Bryan & Norman
+	double Delta_vir_BN_out = Delta_vir_crit_out / Om_out;
+
+
+	double tdyn = t_dyn(cosm, zout, Delta_vir_crit_out, Ez_out);
 	printf("tdyn: %g years\n", tdyn);
 
 	double tout = my_z2t(cosm, zout);
@@ -427,7 +437,7 @@ int main(int argc, char **argv)
 	double tau_quench = 1*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 	double dt_quenched = 8*tau_quench*1e9; 
 	double z_quench = my_t2z(cosm, tout - dt_quenched); 
-	double tdyn_quench = t_dyn(cosm, z_quench);
+	double tdyn_quench = t_dyn(cosm, z_quench, Delta_vir_crit_out, Ez_out);
 	double t1_quench = tout - dt_quenched - tdyn_quench;
 	double z_sat_max = my_t2z(cosm, t1_quench);
 	printf("tau_quench: %lf\n", tau_quench);
@@ -437,12 +447,9 @@ int main(int argc, char **argv)
 
 	if (z_sat_max > 6) printf("z_sat_max %lf > max z for conc table!", z_sat_max);
 
-	double Delta179 = 179;
-	double x_out = omega_m(cosm, zout) - 1;
-	double Delta_vir_crit_out = (18 * pow(M_PI,2)) + (82.0 * x_out) - (39.0 * pow(x_out,2)); // Bryan & Norman
-	double Delta_vir_BN_out = Delta_vir_crit_out / omega_m(cosm,zout);
 
-	double sigma_e = 0; // std of baryon conversion efficiency
+
+	double sigma_e = 0.2; // std of baryon conversion efficiency
 
 	double start_loop=clock();
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
@@ -461,7 +468,7 @@ int main(int argc, char **argv)
 		int counter = 0;
 
 		int imass;
-		for (int itree = 0; itree < ntrees; itree++)
+		for (int itree = 0; itree < ntrees/10; itree++)
 		{
 			if (itree == cp10*counter)
 			{	
@@ -635,9 +642,11 @@ int main(int argc, char **argv)
 				
 				cBN = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN_out, zout, zout, cubic_set, n_table, table_x, table_y);
 
-				r_vir_out = rvir_from_mvir(cosm, M_out, zout);
+				r_vir_out = mvir2rvir(cosm, M_out, zout, Delta_vir_BN_out, rho_mean_out);
 				double rho_vir_out = rho_nfw(cosm, cBN, M_out, r_vir_out, r_vir_out); // [g/cm3] // depends on conc-mass relation
-				double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
+				double Ez_d = E_z(cosm, z1);
+				double rho_mean_d = rho_m(cosm, z1, Ez_d);
+				double r_vir_d = mvir2rvir(cosm, Md, z1, Delta_vir_BN_out, rho_mean_d); //[cm]
 
 				double dR_dt_dyn = (r_vir_out - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
 				double term2 = 4 * M_PI * r_vir_out*r_vir_out * rho_vir_out * dR_dt_dyn / Msun;  
@@ -679,7 +688,13 @@ int main(int argc, char **argv)
 					{
 						
 						//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
-						double tdyn = t_dyn(cosm, z_infall);
+						double Ez = E_z(cosm, z_infall);
+						double Om = omega_m(cosm,z_infall, Ez);
+						double x = Om - 1;
+						double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
+						double Delta_vir_BN = Delta_vir_crit / Om;
+
+						double tdyn = t_dyn(cosm, z_infall, Delta_vir_crit, Ez);
 
 						double t_merge = my_z2t(cosm, z_infall);
 						double t1_sat = t_merge - tdyn;
@@ -715,14 +730,16 @@ int main(int argc, char **argv)
 							double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
 
 							double c179 = conc_interp(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
-							double x = omega_m(cosm, z_infall) - 1;
-							double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-							double Delta_vir_BN = Delta_vir_crit / omega_m(cosm,z_infall);
 							double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
 
-							double r_vir_infall = rvir_from_mvir(cosm, M_infall, z_infall);
+							double Ez_infall = E_z(cosm, z_infall);
+							double Ez_d = E_z(cosm, z1);
+							double rho_mean_infall = rho_m(cosm, z_infall, Ez_infall);
+							double rho_mean_d = rho_m(cosm, z1, Ez_d);
+
+							double r_vir_infall = mvir2rvir(cosm, M_infall, z_infall, Delta_vir_BN, rho_mean_infall);
 							double rho_vir_infall = rho_nfw(cosm, cBN_sat, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
-							double r_vir_d = rvir_from_mvir(cosm, Md, z1); //[cm]
+							double r_vir_d = mvir2rvir(cosm, Md, z1, Delta_vir_BN, rho_mean_d); //[cm]
 							
 							double dR_dt_dyn = (r_vir_infall - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
 							double term2 = 4 * M_PI * r_vir_infall*r_vir_infall * rho_vir_infall * dR_dt_dyn / Msun;  
@@ -787,50 +804,54 @@ double E_z(Cosmology cosm, double z)
 	return Ez;
 }
 
-double omega_m(Cosmology cosm, double z)
+double omega_m(Cosmology cosm, double z, double Ez)
 {
 	double zp1 = 1.0 + z;
 
-	double Ez = sqrt(cosm.omega*pow(zp1,3) + pow((1.0 - cosm.omega - cosm.lambda),2) + cosm.lambda); 
+	//double Ez = sqrt(cosm.omega*pow(zp1,3) + pow((1.0 - cosm.omega - cosm.lambda),2) + cosm.lambda); 
 	double omega_m = cosm.omega * pow(zp1,3)/pow(Ez,2);
 
 	return omega_m;
 }
 
-double rho_crit(Cosmology cosm, double z)
+double rho_crit(Cosmology cosm, double z, double Ez)
 {
 	// H0 [/s]
 	// G [cm3 g-1 s-2]
-	double Ez = E_z(cosm, z);
+//	double Ez = E_z(cosm, z);
 
 	double rho_crit = 3 * pow(Ez*cosm.hubble*H0,2)/(8*M_PI*G); 
 	return rho_crit; // [g/cm3]
 }
 
-double rho_m(Cosmology cosm, double z)
+double rho_m(Cosmology cosm, double z, double Ez)
 {
-	double rho_m = omega_m(cosm,z)*rho_crit(cosm,z);
+	double rho_m = omega_m(cosm,z, Ez)*rho_crit(cosm,z, Ez);
 	return rho_m; // [g/cm3]
 }
 
-double t_dyn(Cosmology cosm, double z)
+double t_dyn(Cosmology cosm, double z, double Delta_vir_crit, double Ez)
 {
 	// H0               3.226e-18       // Hubble constant(/s) //
+	/*
 	double zp1 = 1.0 + z;
 	
 	double Ez = sqrt(cosm.omega*pow(zp1,3) + pow((1.0 - cosm.omega - cosm.lambda),2) + cosm.lambda); 
 	double omega_m = cosm.omega * pow(zp1,3)/pow(Ez,2);
-	double x = omega_m - 1; 
+	double Om = omega_m(cosm, z);
+	double x = Om - 1; 
 
 	double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-	double Delta_vir = Delta_vir_crit/omega_m;
+	double Delta_vir = Delta_vir_crit/Om;
+	*/
 
 //	double Delta_vir = 35.4;
 //	double rho_crit = 3 * pow(Ez*cosm.hubble,2)/(8*M_PI*G); 
 
 	// tdyn = pow(3/(4 * G * M_PI * Delta_vir * rho_crit),0.5);
 	double H  = Ez * (H0*cosm.hubble);
-	double tdyn_s = pow(2/(Delta_vir*omega_m),0.5)/ H;//dynamical time in seconds
+	//double tdyn_s = pow(2/(Delta_vir*Om),0.5)/ H;//dynamical time in seconds
+	double tdyn_s = pow(2/(Delta_vir_crit),0.5)/ H;//dynamical time in seconds
 	double tdyn_yr = tdyn_s / yr;//dynamical time in years
 	return tdyn_yr;
 }
@@ -838,18 +859,20 @@ double t_dyn(Cosmology cosm, double z)
 
 
 
-double rvir_from_mvir(Cosmology cosm, double mvir_sol_h, double z)
+double mvir2rvir(Cosmology cosm, double mvir_sol_h, double z, double Delta_vir, double rho_mean)
 {
+	/*
 	// Need to consider units
-//	double omega_m = omega_m(cosm,z);
-	double x = omega_m(cosm,z) - 1; 
+	double Om = omega_m(cosm,z);
+	double x = Om - 1; 
 	double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2));
 
-	double Delta_vir = Delta_vir_crit/omega_m(cosm,z);
+	double Delta_vir = Delta_vir_crit/Om;
+	*/
 //	double Delta_vir = 35.4;
 	
 	double mvir = mvir_sol_h * Msun /cosm.hubble; //[g]
-	double rho_mean = rho_m(cosm, z);
+//	double rho_mean = rho_m(cosm, z);
 
 	double rvir = pow((3 * mvir)/(4*M_PI*rho_mean*Delta_vir), 1.0/3.0); // [cm]
 	return rvir; // [cm]
@@ -859,9 +882,11 @@ double rvir_from_mvir(Cosmology cosm, double mvir_sol_h, double z)
 
 double my_t2z(Cosmology cosm, double t_yr)
 {
+	/*
 	double tnow_ref = 13.7957 * pow(10,9); //from cosmology calculator for Planck 2018 cosmology
 	double tnow_cosm = ztotime((double)0, cosm)/ (H0*cosm.hubble*yr); // note this is not equal to 1 for z = 0
 	double tnow_frac = tnow_cosm/tnow_ref; // to account for inaccuracy of code (this is only approx correction)
+	*/
 	
 	double t_s = t_yr * yr;
 	double t_cosm = t_s * (H0 * cosm.hubble);
@@ -871,9 +896,11 @@ double my_t2z(Cosmology cosm, double t_yr)
 
 double my_z2t(Cosmology cosm, double z)
 {
+	/*
 	double tnow_ref = 13.7957 * pow(10,9); //from cosmology calculator for Planck 2018 cosmology
 	double tnow_cosm = ztotime((double)0, cosm) / (H0*cosm.hubble*yr);
 	double tnow_frac = tnow_cosm/tnow_ref;
+	*/
 
 	double t_cosm = ztotime(z, cosm);
 	double t_s = t_cosm / (H0 * cosm.hubble);
@@ -1035,6 +1062,7 @@ double *c_pseudo_interp_table(int n_table, double table_x[], double table_y[])
 	return cubic_set;
 }
 
+/*
 double c_pseudo(Cosmology cosm, double ci, double zi, double zf, double *cubic_set, int n_table, double table_x[], double table_y[])
 {
 	//xDelta in COLOSSUS
@@ -1048,7 +1076,9 @@ double c_pseudo(Cosmology cosm, double ci, double zi, double zf, double *cubic_s
 	double c2 = spline_cubic_val(n_table, table_y, table_x, cubic_set, y, &ypval, &yppval);
 	return c2;
 }
+*/
 
+/*
 double M_pseudo(Cosmology cosm, double Mi_pinocchio, double zi, double zf, double *cubic_set, int n_table, double table_x[], double table_y[], double mass_bins[], double z_bins[], double **conc_arr)
 {
 
@@ -1070,14 +1100,18 @@ double M_pseudo(Cosmology cosm, double Mi_pinocchio, double zi, double zf, doubl
 
 	return Mf;
 }
+*/
 
 double c_change_mass_def(Cosmology cosm, double ci, double Delta_i, double Delta_f, double zi, double zf, double *cubic_set, int n_table, double table_x[], double table_y[])
 {
 	//xDelta in COLOSSUS
 	//Change from delta_vir_2lpt (35.4) to delta_pinocchio (15.28)
 	//
-	double rho_i = rho_m(cosm, zi);
-	double rho_f = rho_m(cosm, zf);
+	double Ez_i = E_z(cosm, zi);
+	double Ez_f = E_z(cosm, zf);
+
+	double rho_i = rho_m(cosm, zi, Ez_i);
+	double rho_f = rho_m(cosm, zf, Ez_f);
 	double time3 = clock();
 	double y;
 	y = (mu(ci)/pow(ci,3))*(Delta_f*rho_f/(Delta_i*rho_i));
@@ -1168,6 +1202,7 @@ double M_dyn(double masses[], double redshifts[], int index, double z1, int equa
 	return Md;
 }
 
+/*
 double tau(Cosmology cosm, double M_star_msun_h, double z)
 {
 	double tdyn = t_dyn(cosm, z);
@@ -1178,7 +1213,9 @@ double tau(Cosmology cosm, double M_star_msun_h, double z)
 
 	return tau; 
 }
+*/
 
+/*
 double mhalo2mstar(Cosmology cosm, double M_halo_msun_h, double z)
 {
 
@@ -1205,7 +1242,9 @@ double mhalo2mstar(Cosmology cosm, double M_halo_msun_h, double z)
 	double m_star = M_halo_msun_h * 2 * N / (pow(M_halo/M1,-beta) + pow(M_halo/M1, gamma));
 	return m_star;
 }
+*/
 
+/*
 double sfr2mstar(Cosmology cosm, double sfr, double z)
 {
 	// Tomczak 2016 eq.2
@@ -1221,6 +1260,7 @@ double sfr2mstar(Cosmology cosm, double sfr, double z)
 
 
 }
+*/
 
 double conc_interp(double logM, double z, double mass_bins[], double z_bins[], double **conc_arr)
 {

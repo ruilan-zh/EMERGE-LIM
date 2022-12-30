@@ -199,10 +199,10 @@ int main(int argc, char **argv)
 
 //	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47, 0.4) - 8part
 
-	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
+//	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
 	//double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
-//	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
+	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
 
 
 
@@ -211,6 +211,7 @@ int main(int argc, char **argv)
 //	double min_part = 32;
 
 	double min_hmass = pmass*min_part; 
+	printf("\n");
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
 	double zout = 1.5;
@@ -228,37 +229,37 @@ int main(int argc, char **argv)
 	double tdyn = t_dyn(cosm, zout, Delta_vir_crit_out, Ez_out);
 	printf("tdyn: %g years\n", tdyn);
 
-	double tout = my_z2t(cosm, zout);
-	printf("tout: %lf\n", tout);
+	//double tout = my_z2t(cosm, zout);
+	//printf("tout: %lf\n", tout);
 	double a = 1.0/(zout+1);
 	printf("zout: %lf\n", zout);
-	printf("a: %lf\n", a);
-	printf("a: %lf\n", (a0-a)/da);
+	//printf("a: %lf\n", a);
+	//printf("a: %lf\n", (a0-a)/da);
 
 	ibin_zt = (int) ((a0 - a)/da);
-	printf("ibin_zt: %d\n", ibin_zt);
-	tout = lin_interp(z2t_z, z2t_t, zout, ibin_zt)*1e9;
-	printf("tout: %lf\n", tout);
+	//printf("ibin_zt: %d\n", ibin_zt);
+	double tout = lin_interp(z2t_z, z2t_t, zout, ibin_zt)*1e9;
+	printf("tout: %g years\n", tout);
 
 	double t1 = tout - tdyn;
 	printf("tout - tdyn: %g years\n", t1);
 
-	double z1 = my_t2z(cosm, t1);
-	printf("z(tout - tdyn): %lf\n", z1);
+//	double z1 = my_t2z(cosm, t1);
+//	printf("z(tout - tdyn): %lf\n", z1);
 
 	ibin_zt = (int) ((t2z_t0 - (t1/1e9))/(t2z_dt));
-	z1 = lin_interp(t2z_t, t2z_z, t1/1e9, ibin_zt);
+	double z1 = lin_interp(t2z_t, t2z_z, t1/1e9, ibin_zt);
 	printf("z(tout - tdyn): %lf\n", z1);
 
 	fflush(stdout);
 
 	char runname[16], filename[256];
 
-	//sprintf(runname, "r000%d", irun);
-	sprintf(runname, "r00000");
+	sprintf(runname, "r000%d", irun);
+	//sprintf(runname, "r00000");
 
-	//char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
-	char dir[128] = "/mnt/data_cat4/moriwaki";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
 	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
@@ -271,6 +272,7 @@ int main(int argc, char **argv)
 	char fname_cat[128];
 
 	sprintf(fname_cat, "%s/pinocchio.%.2f00.%s.catalog.out", dir, zout, runname);
+	printf("\n");
 	printf("Opening file %s\n",fname_cat);
 
 	fflush(stdout);
@@ -377,6 +379,7 @@ int main(int argc, char **argv)
 
 	FILE *fp;
 	sprintf(filename, "%s/pinocchio.%s.histories.out", dir, runname);
+	printf("\n");
 	printf("Opening file %s\n", filename);
 	fflush(stdout);
 
@@ -536,6 +539,12 @@ int main(int argc, char **argv)
 	printf("zmin for conc table: %lf\n", zmin);
 	printf("dz: %lf\n", dz);
 
+	if (zout < zmin) 
+	{
+		fprintf(stderr, "zout %lf < min z for conc table! \n", zout);
+		exit(1);
+	}
+
 	double *z_bins;
 	z_bins = (double*) malloc(nbins_z * sizeof(double));
 	for (int ibin = 0; ibin < nbins_z; ibin++)
@@ -543,25 +552,42 @@ int main(int argc, char **argv)
 		z_bins[ibin] = zmin + ibin*dz;
 	}
 
-	/*
-	double log_eta_ha = 39.38;
-	double e_ha = 0.951;  
-	double chabrier_factor = 0.88;
-	*/
-
 	/* satellite quenching time */
-	double tau_quench = 1*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+	double tau_quench = 1.5*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 	double dt_quenched = 8*tau_quench*1e9; 
-	double z_quench = my_t2z(cosm, tout - dt_quenched); 
-	double tdyn_quench = t_dyn(cosm, z_quench, Delta_vir_crit_out, Ez_out);
+	//double z_quench = my_t2z(cosm, tout - dt_quenched); 
+
+	double t_quench = tout - dt_quenched;
+	ibin_zt = (int) ((t2z_t0 - (t_quench/1e9))/(t2z_dt));
+	double z_quench = lin_interp(t2z_t, t2z_z, t_quench/1e9, ibin_zt);
+	printf("\n");
+	printf("z_quench: %lf\n", z_quench);
+
+	double Ez_quench = E_z(cosm, z_quench);
+	double Om_quench = omega_m(cosm, z_quench, Ez_quench); 
+	double x_quench = Om_quench - 1;
+	double Delta_vir_crit_quench = (18 * pow(M_PI,2)) + (82.0 * x_quench) - (39.0 * pow(x_quench,2)); // Bryan & Norman
+
+	double tdyn_quench = t_dyn(cosm, z_quench, Delta_vir_crit_quench, Ez_quench);
+
 	double t1_quench = tout - dt_quenched - tdyn_quench;
-	double z_sat_max = my_t2z(cosm, t1_quench);
+	//double z_sat_max = my_t2z(cosm, t1_quench);
+
+	//printf("z_sat_max: %lf\n", z_sat_max);
+	ibin_zt = (int) ((t2z_t0 - (t1_quench/1e9))/(t2z_dt));
+	double z_sat_max = lin_interp(t2z_t, t2z_z, t1_quench/1e9, ibin_zt);
+
+	printf("tdyn_quench: %g\n", tdyn_quench);
 	printf("tau_quench: %lf\n", tau_quench);
 	printf("z_quench: %lf\n", z_quench);
-	printf("dt_quenched: %lf\n", dt_quenched);
+	printf("dt_quenched: %g\n", dt_quenched);
 	printf("z_sat_max: %lf\n", z_sat_max);
 
-	if (z_sat_max > 6) printf("z_sat_max %lf > max z for conc table!", z_sat_max);
+	if (z_sat_max > 6) 
+	{
+		fprintf(stderr, "z_sat_max %lf > max z for conc table! \n", z_sat_max);
+		exit(1);
+	}
 
 
 
@@ -577,6 +603,7 @@ int main(int argc, char **argv)
 		ntrees_tot += ntrees;
 		nbranch_tot += nbranch;
 
+		printf("\n");
 		printf("Ntrees: %d\n", ntrees);
 		printf("Nbranches: %d\n", nbranch);
 
@@ -1095,7 +1122,7 @@ double modelKlypin16(double M, double z, char *mdef)
 	if (M < 1E10)
 	{
 		fprintf(stderr, "Invalid mass for Klypin et al 2016 m-based model, %g\n", M);
-		exit(0);
+		exit(1);
 	}
 	*/
 	
@@ -1129,7 +1156,7 @@ double modelKlypin16(double M, double z, char *mdef)
 	else
 	{
 		fprintf(stderr, "Invalid mass definition for Klypin et al 2016 m-based model, %s\n", mdef);
-		exit(0);
+		exit(1);
 	}
 
 	int bin;
@@ -1143,7 +1170,7 @@ double modelKlypin16(double M, double z, char *mdef)
 		else if (z > 5.4) 
 		{
 			printf("z = %lf > 5.4\n", z);
-			exit(0);
+			exit(1);
 		}
 	}
 

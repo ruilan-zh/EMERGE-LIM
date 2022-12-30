@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	
-	int nbins_zt = 130;  
+	int nbins_zt = 138;  
 	printf("nbins_zt: %d\n", nbins_zt);
 
 	double *t2z_z;
@@ -176,18 +176,20 @@ int main(int argc, char **argv)
 	fclose(fp_z2t);
 
 	double z2t_z0 = z2t_z[0];
+	double z2t_zmax = z2t_z[nbins_zt-1];
 	double a0 = z2t_a[0];
 	double z2t_t0 = z2t_t[0];
 	double da = z2t_a[0] - z2t_a[1];
 	printf("z2t_a0: %lf\n", a0);
 	printf("z2t_z0: %lf\n", z2t_z0);
+	printf("z2t_zmax: %lf\n", z2t_zmax);
 	printf("z2t_t0: %lf\n", z2t_t0);
 	printf("da: %lf\n", da);
 
 	fflush(stdout);
 
 	int irun = 22;
-//	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
+	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
 //	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
@@ -202,7 +204,7 @@ int main(int argc, char **argv)
 //	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
 //	double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
-	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
+//	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
 
 
 
@@ -258,9 +260,9 @@ int main(int argc, char **argv)
 	sprintf(runname, "r000%d", irun);
 	//sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
-//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
@@ -555,8 +557,11 @@ int main(int argc, char **argv)
 		z_bins[ibin] = zmin + ibin*dz;
 	}
 
+	double z_conc_max = z_bins[nbins_z-1];
+	printf("z_conc_max: %lf\n", z_conc_max);
+	 
 	/* satellite quenching time */
-	double tau_quench0 = 1.5;
+	double tau_quench0 = 1.7;
 	printf("tau_quench0: %lf\n", tau_quench0);
 	double tau_quench = tau_quench0*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 	printf("tau_quench: %lf\n", tau_quench);
@@ -568,9 +573,9 @@ int main(int argc, char **argv)
 	/*
 	ibin_zt = (int) ((t2z_t0 - (t_quench/1e9))/(t2z_dt));
 	double z_quench = lin_interp(t2z_t, t2z_z, t_quench/1e9, ibin_zt);
+	*/
 	printf("\n");
 	printf("z_quench: %lf\n", z_quench);
-	*/
 
 	double Ez_quench = E_z(cosm, z_quench);
 	double Om_quench = omega_m(cosm, z_quench, Ez_quench); 
@@ -592,16 +597,20 @@ int main(int argc, char **argv)
 	printf("tdyn_quench: %g\n", tdyn_quench);
 	printf("z_sat_max: %lf\n", z_sat_max);
 
-	if (z_sat_max > 6) 
+	if (z_sat_max > z2t_zmax) 
 	{
-		z_sat_max = 6;
-		printf("changed z_sat_max to %lf\n", z_sat_max);
+		z_sat_max = z2t_zmax;
+		printf("WARNING: changed z_sat_max to %lf\n", z_sat_max);
 		/*
 		fprintf(stderr, "z_sat_max %lf > max z for conc table! \n", z_sat_max);
 		exit(1);
 		*/
 	}
-
+	if (z_quench > z_conc_max) 
+	{
+		z_quench = z_conc_max;
+		printf("WARNING: changed z_quench to %lf\n", z_quench);
+	}
 
 
 	double sigma_e = 0.2; // std of baryon conversion efficiency
@@ -744,7 +753,7 @@ int main(int argc, char **argv)
 						imw++;
 					}
 				
-					if (logM_out > 11.5 && zmerger <= z_sat_max)
+					if (logM_out > 11.5 && zmerger <= z_quench)
 					{
 						// before merging with main branch
 						sat_nonquench[ibranch] = 1;
@@ -774,6 +783,7 @@ int main(int argc, char **argv)
 					}
 
 				}
+//				else if (logM_out > 11.5) count++; //printf("zmerger: %lf\n", zmerger);
 				
 				
 			}
@@ -791,16 +801,6 @@ int main(int argc, char **argv)
 //			if (imw == 1 && logM_out > 10) count++;
 			if (mw_none == 0) // if we have merger history info 
 			{
-				/*
-				if (found == 0) 
-				{
-					//printf("mass0: %g\n mass1: %g\n", masses[0], masses[1]);
-					//printf("redshifts0: %g\n redshifts1: %g\n", redshifts[0], redshifts[1]);
-					printf("mass: %g \n", masses[index]);
-					printf("redshift: %g \n", redshifts[index]);
-				}
-				*/
-				if (index == imw-1) count++;
 
 				Md = M_dyn(masses, redshifts, index, z1, equals);
 
@@ -845,6 +845,7 @@ int main(int argc, char **argv)
 			// Compute sfr for satellites
 			if (logM_out > 11.5)
 			{
+				count++;
 				fprintf(fp_sfr_sat, "# %lf\n", logM_out);
 				for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 				{
@@ -861,12 +862,12 @@ int main(int argc, char **argv)
 						
 						//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
 						double Ez_infall = E_z(cosm, z_infall);
-						double Om = omega_m(cosm,z_infall, Ez_infall);
-						double x = Om - 1;
-						double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
-						double Delta_vir_BN = Delta_vir_crit / Om;
+						double Om_infall = omega_m(cosm,z_infall, Ez_infall);
+						double x = Om_infall - 1;
+						double Delta_vir_crit_infall = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
+						double Delta_vir_BN_infall = Delta_vir_crit_infall / Om_infall;
 
-						double tdyn = t_dyn(cosm, z_infall, Delta_vir_crit, Ez_infall);
+						double tdyn = t_dyn(cosm, z_infall, Delta_vir_crit_infall, Ez_infall);
 
 						//double t_merge = my_z2t(cosm, z_infall);	
 //						printf("z_infall: %lf\n", z_infall);
@@ -913,15 +914,23 @@ int main(int argc, char **argv)
 							double dM_dt_dyn = (M_infall - Md)/cosm.hubble/tdyn; 
 
 							double c179 = conc_interp(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
-							double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
+							double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN_infall, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
 
-							double Ez_d = E_z(cosm, z1);
+							
+						
+
+							double Ez_d = E_z(cosm, z1_sat);
 							double rho_mean_infall = rho_m(cosm, z_infall, Ez_infall);
-							double rho_mean_d = rho_m(cosm, z1, Ez_d);
+							double rho_mean_d = rho_m(cosm, z1_sat, Ez_d);
 
-							double r_vir_infall = mvir2rvir(cosm, M_infall, z_infall, Delta_vir_BN, rho_mean_infall);
+							double Om_d = omega_m(cosm,z1_sat, Ez_d);
+							double x_d = Om_d - 1;
+							double Delta_vir_crit_d = (18 * pow(M_PI,2)) + (82.0 * x_d) - (39.0 * pow(x_d,2)); // Bryan & Norman
+							double Delta_vir_BN_d = Delta_vir_crit_d / Om_d;
+
+							double r_vir_infall = mvir2rvir(cosm, M_infall, z_infall, Delta_vir_BN_infall, rho_mean_infall);
 							double rho_vir_infall = rho_nfw(cosm, cBN_sat, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
-							double r_vir_d = mvir2rvir(cosm, Md, z1, Delta_vir_BN, rho_mean_d); //[cm]
+							double r_vir_d = mvir2rvir(cosm, Md, z1_sat, Delta_vir_BN_d, rho_mean_d); //[cm]
 							
 							double dR_dt_dyn = (r_vir_infall - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
 							double term2 = 4 * M_PI * r_vir_infall*r_vir_infall * rho_vir_infall * dR_dt_dyn / Msun;  

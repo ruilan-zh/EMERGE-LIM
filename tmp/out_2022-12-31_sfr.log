@@ -1,34 +1,35 @@
-Sat Dec 31 01:49:00 2022
+Sat Dec 31 03:40:35 2022
 
 Opening file t2z_planck18only.txt
-nbins_zt: 130
-# redshift / age (Gyr) - dt = -0.1 (nrows=130)
+nbins_zt: 138
+# redshift / age (Gyr) - dt = -0.1 (nrows=138)
 
-ibin_zt: 130
+ibin_zt: 138
 t2z_z0: -0.000000
 t2z_t0: 13.795000
 dt: 0.100000
 Opening file z2t_planck18only.txt
-# scale factor / redshift / age (Gyr)  - da = -0.00667 (nrows=130)
+# scale factor / redshift / age (Gyr)  - da = -0.00707 (nrows=138)
 
-ibin_zt: 130
+ibin_zt: 138
 z2t_a0: 1.000000
 z2t_z0: 0.000000
+z2t_zmax: 30.836990
 z2t_t0: 13.795460
-da: 0.006670
+da: 0.007070
 
 Min halo mass: 10.104985
 tdyn: 6.73499e+08 years
 zout: 1.500000
-tout: 4.26048e+09 years
-tout - tdyn: 3.58698e+09 years
-z(tout - tdyn): 1.815411
+tout: 4.26064e+09 years
+tout - tdyn: 3.58714e+09 years
+z(tout - tdyn): 1.815321
 
 Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024/pinocchio.1.5000.r00022.catalog.out
 The file has been written by 40 tasks
 The box has been fragmented in 1 slices
 nhalo in cat: 3455855
-time taken to read cat: 0.601807 s
+time taken to read cat: 0.500179 s
 
 Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024/pinocchio.r00022.histories.out
 The run used 1 slices
@@ -44,17 +45,21 @@ logMmin: 9.000000
 dlogM: 0.100000
 zmin for conc table: 0.400000
 dz: 0.100000
-tau_quench0: 1.500000
-tau_quench: 0.379473
-dt_quenched: 3.03579e+09
-tdyn_quench: 1.94714e+08
-z_sat_max: 5.555698
+z_conc_max: 6.000000
+tau_quench0: 1.700000
+tau_quench: 0.430070
+dt_quenched: 3.44056e+09
+
+z_quench: 6.633681
+tdyn_quench: 1.30465e+08
+z_sat_max: 7.569764
+WARNING: changed z_quench to 6.000000
 
 Ntrees: 3455855
 Nbranches: 6327691
 ...........
-count:483451
+count:166144
 I found 3455855 trees and 6327691 branches in the file
-time taken to loop through merger trees and assign sfrs: 13.487976 s
-Sat Dec 31 01:49:16 2022
+time taken to loop through merger trees and assign sfrs: 12.415311 s
+Sat Dec 31 03:40:50 2022
 

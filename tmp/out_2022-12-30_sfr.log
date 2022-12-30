@@ -1,4 +1,4 @@
-Fri Dec 30 19:18:48 2022
+Fri Dec 30 19:57:31 2022
 
 Opening file t2z_planck18only.txt
 nbins_zt: 130
@@ -28,7 +28,7 @@ Opening file /mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/
 The file has been written by 60 tasks
 The box has been fragmented in 1 slices
 nhalo in cat: 13265696
-time taken to read cat: 1.694399 s
+time taken to read cat: 1.639019 s
 
 Opening file /mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part/pinocchio.r00022.histories.out
 The run used 1 slices
@@ -44,14 +44,17 @@ logMmin: 9.000000
 dlogM: 0.100000
 zmin for conc table: 0.400000
 dz: 0.100000
+tau_quench: 0.430070
+dt_quenched: 3.44056e+09
 
-z_quench: 4.815549
-tdyn_quench: 1.95883e+08
-tau_quench: 0.379473
-z_quench: 4.815549
-dt_quenched: 3.03579e+09
-z_sat_max: 5.537030
+z_quench: 5.646914
+tdyn_quench: 1.60462e+08
+z_sat_max: -nan
 
 Ntrees: 13265696
 Nbranches: 26969929
-..
+...........
+I found 13265696 trees and 26969929 branches in the file
+time taken to loop through merger trees and assign sfrs: 31.194471 s
+Fri Dec 30 19:58:06 2022
+

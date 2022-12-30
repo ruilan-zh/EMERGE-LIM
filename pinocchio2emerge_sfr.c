@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 
 	FILE *fp_sfr;
 	char fname_sfr[32];
-	sprintf(fname_sfr, "mass-sfr.txt");
+	sprintf(fname_sfr, "mass-sfr-cent.txt");
 	fp_sfr = fopen(fname_sfr, "w");
 	if (fp_sfr==NULL)
 	{
@@ -553,34 +553,38 @@ int main(int argc, char **argv)
 	}
 
 	/* satellite quenching time */
-	double tau_quench = 1.5*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+	double tau_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+	printf("tau_quench: %lf\n", tau_quench);
 	double dt_quenched = 8*tau_quench*1e9; 
-	//double z_quench = my_t2z(cosm, tout - dt_quenched); 
-
+	printf("dt_quenched: %g\n", dt_quenched);
 	double t_quench = tout - dt_quenched;
+	double z_quench = my_t2z(cosm, tout - dt_quenched); 
+
+	/*
 	ibin_zt = (int) ((t2z_t0 - (t_quench/1e9))/(t2z_dt));
 	double z_quench = lin_interp(t2z_t, t2z_z, t_quench/1e9, ibin_zt);
 	printf("\n");
 	printf("z_quench: %lf\n", z_quench);
+	*/
 
 	double Ez_quench = E_z(cosm, z_quench);
 	double Om_quench = omega_m(cosm, z_quench, Ez_quench); 
 	double x_quench = Om_quench - 1;
 	double Delta_vir_crit_quench = (18 * pow(M_PI,2)) + (82.0 * x_quench) - (39.0 * pow(x_quench,2)); // Bryan & Norman
+	
 
 	double tdyn_quench = t_dyn(cosm, z_quench, Delta_vir_crit_quench, Ez_quench);
 
 	double t1_quench = tout - dt_quenched - tdyn_quench;
-	//double z_sat_max = my_t2z(cosm, t1_quench);
+	double z_sat_max = my_t2z(cosm, t1_quench);
 
 	//printf("z_sat_max: %lf\n", z_sat_max);
+	/*
 	ibin_zt = (int) ((t2z_t0 - (t1_quench/1e9))/(t2z_dt));
 	double z_sat_max = lin_interp(t2z_t, t2z_z, t1_quench/1e9, ibin_zt);
+	*/
 
 	printf("tdyn_quench: %g\n", tdyn_quench);
-	printf("tau_quench: %lf\n", tau_quench);
-	printf("z_quench: %lf\n", z_quench);
-	printf("dt_quenched: %g\n", dt_quenched);
 	printf("z_sat_max: %lf\n", z_sat_max);
 
 	if (z_sat_max > 6) 

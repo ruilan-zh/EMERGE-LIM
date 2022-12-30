@@ -556,7 +556,7 @@ int main(int argc, char **argv)
 	}
 
 	/* satellite quenching time */
-	double tau_quench0 = 2;
+	double tau_quench0 = 1.5;
 	printf("tau_quench0: %lf\n", tau_quench0);
 	double tau_quench = tau_quench0*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 	printf("tau_quench: %lf\n", tau_quench);
@@ -654,6 +654,7 @@ int main(int argc, char **argv)
 			int mw_main[nbranch_tree];
 			double cBN;
 			double r_vir_out;
+			double underestimated = 0;
 
 			int *sat_nonquench;
 			sat_nonquench = (int*) malloc(nbranch_tree* sizeof(int));
@@ -735,6 +736,8 @@ int main(int argc, char **argv)
 							{	
 								equals = 1;
 								index = 0; //underestimates change in mass 
+								underestimated = 1;
+//								if (logM_out > 10.5) count++;
 							}
 						
 						}
@@ -785,8 +788,19 @@ int main(int argc, char **argv)
 			double sfr = 0;
 			start = clock();
 		
+//			if (imw == 1 && logM_out > 10) count++;
 			if (mw_none == 0) // if we have merger history info 
 			{
+				/*
+				if (found == 0) 
+				{
+					//printf("mass0: %g\n mass1: %g\n", masses[0], masses[1]);
+					//printf("redshifts0: %g\n redshifts1: %g\n", redshifts[0], redshifts[1]);
+					printf("mass: %g \n", masses[index]);
+					printf("redshift: %g \n", redshifts[index]);
+				}
+				*/
+				if (index == imw-1) count++;
 
 				Md = M_dyn(masses, redshifts, index, z1, equals);
 
@@ -819,8 +833,10 @@ int main(int argc, char **argv)
 				{
 					fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
+				//if (logM_out > 10 && underestimated == 1 && dM_dt > 0) printf("%lf %lf\n", logM_out, log10(sfr));
+				//else count++;
+				//if (logM_out < 10.8 && log10(sfr) > -1) count++;
 			}
-			else if (logM_out > 11) count ++;
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning cents: %lf s\n", cpu_time_used);

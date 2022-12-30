@@ -214,8 +214,7 @@ int main(int argc, char *argv[])
 			}
 			k++;
 		}
-		*/
-		
+	*/	
 		
 		fclose(fp_sat);
 		printf("%d\n", k);

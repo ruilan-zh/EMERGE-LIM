@@ -1,0 +1,60 @@
+Sat Dec 31 01:49:00 2022
+
+Opening file t2z_planck18only.txt
+nbins_zt: 130
+# redshift / age (Gyr) - dt = -0.1 (nrows=130)
+
+ibin_zt: 130
+t2z_z0: -0.000000
+t2z_t0: 13.795000
+dt: 0.100000
+Opening file z2t_planck18only.txt
+# scale factor / redshift / age (Gyr)  - da = -0.00667 (nrows=130)
+
+ibin_zt: 130
+z2t_a0: 1.000000
+z2t_z0: 0.000000
+z2t_t0: 13.795460
+da: 0.006670
+
+Min halo mass: 10.104985
+tdyn: 6.73499e+08 years
+zout: 1.500000
+tout: 4.26048e+09 years
+tout - tdyn: 3.58698e+09 years
+z(tout - tdyn): 1.815411
+
+Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024/pinocchio.1.5000.r00022.catalog.out
+The file has been written by 40 tasks
+The box has been fragmented in 1 slices
+nhalo in cat: 3455855
+time taken to read cat: 0.601807 s
+
+Opening file /mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024/pinocchio.r00022.histories.out
+The run used 1 slices
+Opening file conc_diemer.txt
+nbins_m: 61
+nbins_z: 57
+# columns: log10(mass) 9 - 15 with dlogM = 0.1 (nbins = 61)
+
+# rows: redshifts 0.4 - 6 with dz = 0.1 (nbins = 57)
+
+ibin_z: 57
+logMmin: 9.000000
+dlogM: 0.100000
+zmin for conc table: 0.400000
+dz: 0.100000
+tau_quench0: 1.500000
+tau_quench: 0.379473
+dt_quenched: 3.03579e+09
+tdyn_quench: 1.94714e+08
+z_sat_max: 5.555698
+
+Ntrees: 3455855
+Nbranches: 6327691
+...........
+count:483451
+I found 3455855 trees and 6327691 branches in the file
+time taken to loop through merger trees and assign sfrs: 13.487976 s
+Sat Dec 31 01:49:16 2022
+

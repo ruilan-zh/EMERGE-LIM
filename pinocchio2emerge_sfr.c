@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 	fflush(stdout);
 
 	int irun = 22;
-//	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
+	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
 //	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
@@ -201,8 +201,8 @@ int main(int argc, char **argv)
 
 //	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
-	//double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
-	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
+//	double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
+//	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
 
 
 
@@ -258,7 +258,10 @@ int main(int argc, char **argv)
 	sprintf(runname, "r000%d", irun);
 	//sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
@@ -553,7 +556,9 @@ int main(int argc, char **argv)
 	}
 
 	/* satellite quenching time */
-	double tau_quench = 1.7*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
+	double tau_quench0 = 2;
+	printf("tau_quench0: %lf\n", tau_quench0);
+	double tau_quench = tau_quench0*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
 	printf("tau_quench: %lf\n", tau_quench);
 	double dt_quenched = 8*tau_quench*1e9; 
 	printf("dt_quenched: %g\n", dt_quenched);
@@ -589,13 +594,18 @@ int main(int argc, char **argv)
 
 	if (z_sat_max > 6) 
 	{
+		z_sat_max = 6;
+		printf("changed z_sat_max to %lf\n", z_sat_max);
+		/*
 		fprintf(stderr, "z_sat_max %lf > max z for conc table! \n", z_sat_max);
 		exit(1);
+		*/
 	}
 
 
 
 	double sigma_e = 0.2; // std of baryon conversion efficiency
+	int count = 0;
 
 	double start_loop=clock();
 	for (int ThisSlice = 0; ThisSlice < NSlices; ThisSlice++)
@@ -644,8 +654,6 @@ int main(int argc, char **argv)
 			int mw_main[nbranch_tree];
 			double cBN;
 			double r_vir_out;
-			int next = 0;
-			int first = 1;
 
 			int *sat_nonquench;
 			sat_nonquench = (int*) malloc(nbranch_tree* sizeof(int));
@@ -777,7 +785,7 @@ int main(int argc, char **argv)
 			double sfr = 0;
 			start = clock();
 		
-			if (found == 1) // if we have merger history info 
+			if (mw_none == 0) // if we have merger history info 
 			{
 
 				Md = M_dyn(masses, redshifts, index, z1, equals);
@@ -812,6 +820,7 @@ int main(int argc, char **argv)
 					fprintf(fp_sfr, "%lf %lf %lf %lf %lf %lf %lf\n", log10(M_out), pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, log10(sfr));
 				}
 			}
+			else if (logM_out > 11) count ++;
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning cents: %lf s\n", cpu_time_used);
@@ -835,13 +844,13 @@ int main(int argc, char **argv)
 					{
 						
 						//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
-						double Ez = E_z(cosm, z_infall);
-						double Om = omega_m(cosm,z_infall, Ez);
+						double Ez_infall = E_z(cosm, z_infall);
+						double Om = omega_m(cosm,z_infall, Ez_infall);
 						double x = Om - 1;
 						double Delta_vir_crit = (18 * pow(M_PI,2)) + (82.0 * x) - (39.0 * pow(x,2)); // Bryan & Norman
 						double Delta_vir_BN = Delta_vir_crit / Om;
 
-						double tdyn = t_dyn(cosm, z_infall, Delta_vir_crit, Ez);
+						double tdyn = t_dyn(cosm, z_infall, Delta_vir_crit, Ez_infall);
 
 						//double t_merge = my_z2t(cosm, z_infall);	
 //						printf("z_infall: %lf\n", z_infall);
@@ -855,7 +864,7 @@ int main(int argc, char **argv)
 
 						double t1_sat = t_merge - tdyn;
 						//double z1_sat = my_t2z(cosm, t1_sat);
-						ibin_zt = (int) (t2z_t0 - (t1_sat/1e9))/(t2z_dt);
+						ibin_zt = (int) ((t2z_t0 - (t1_sat/1e9))/t2z_dt);
 						double z1_sat = lin_interp(t2z_t, t2z_z, t1_sat/1e9, ibin_zt);
 						//printf("tdyn=%lf\n", tdyn/1E9);
 
@@ -890,7 +899,6 @@ int main(int argc, char **argv)
 							double c179 = conc_interp(logM_infall, z_infall, mass_bins, z_bins, conc_arr);
 							double cBN_sat = c_change_mass_def(cosm, c179, Delta179, Delta_vir_BN, z_infall, z_infall, cubic_set, n_table, table_x, table_y);
 
-							double Ez_infall = E_z(cosm, z_infall);
 							double Ez_d = E_z(cosm, z1);
 							double rho_mean_infall = rho_m(cosm, z_infall, Ez_infall);
 							double rho_mean_d = rho_m(cosm, z1, Ez_d);
@@ -938,6 +946,7 @@ int main(int argc, char **argv)
 		}
 		printf("\n");
 	}
+	printf("count:%d\n", count);
 	printf("I found %Ld trees and %Ld branches in the file\n", ntrees_tot, nbranch_tot);
 	end = clock();
      	cpu_time_used = ((double) (end - start_loop)) / CLOCKS_PER_SEC;

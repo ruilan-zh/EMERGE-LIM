@@ -912,7 +912,7 @@ int main(int argc, char **argv)
 							int index1=0;
 							for (int iz=1; iz < nmw_sat; iz++)
 							{
-								if (z1_sat > redshifts_sat1[iz])
+								if (z1_sat < redshifts_sat1[iz])
 								{
 									index1 = iz - 1;
 									equals = 0;

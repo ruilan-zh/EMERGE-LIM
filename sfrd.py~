@@ -1,6 +1,6 @@
 import numpy as np
 
-cent = np.loadtxt("mass-sfr.txt", unpack=True)
+cent = np.loadtxt("mass-sfr-cent.txt", unpack=True)
 sfrsum = np.loadtxt("mass-sfr-sum.txt", unpack=True)
 
 mass,sfr = [cent[0], cent[-1]]

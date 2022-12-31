@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 	fflush(stdout);
 
 	int irun = 22;
-	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
+//	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
 //	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 
 //	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
-//	double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
+	double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
 //	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
 
 
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	printf("\n");
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 1.5;
+	double zout = 0.4;
 	
 	double Ez_out = E_z(cosm, zout);
 	double rho_mean_out = rho_m(cosm, zout, Ez_out);
@@ -261,8 +261,8 @@ int main(int argc, char **argv)
 	//sprintf(runname, "r00000");
 
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
-//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.4";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
@@ -561,6 +561,9 @@ int main(int argc, char **argv)
 	printf("z_conc_max: %lf\n", z_conc_max);
 	 
 	/* satellite quenching time */
+	double t_delay0 = 3;
+	double t_delay = t_delay0 * pow(1+zout, -3.0/2.0); 
+	printf("t_delay: %lf", t_delay);
 	double tau_quench0 = 1.7;
 	printf("tau_quench0: %lf\n", tau_quench0);
 	double tau_quench = tau_quench0*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
@@ -754,7 +757,7 @@ int main(int argc, char **argv)
 						imw++;
 					}
 				
-					if (logM_out > 11.5) //&& zmerger <= z_quench)
+					if (logM_out > 11.5 && zmerger <= z_conc_max)
 					{
 						// before merging with main branch
 						sat_nonquench[ibranch] = 1;
@@ -764,7 +767,7 @@ int main(int argc, char **argv)
 					}
 
 				}
-				else if (logM_out > 11.5 && zmerger <= z_sat_max)
+				else if (logM_out > 11.5 && zmerger <= z2t_zmax)
 				{
 					
 					//for halo it merges with
@@ -775,7 +778,7 @@ int main(int argc, char **argv)
 					imw_sats[mw]++;
 
 					//for itself
-					//if (zmerger <= z_quench)
+					if (zmerger <= z_conc_max)
 					{
 						sat_nonquench[ibranch] = 1;
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
@@ -788,7 +791,6 @@ int main(int argc, char **argv)
 				
 				
 			}
-						if (itree == 86)printf("cp9\n");
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("after reading: %lf s\n", cpu_time_used);
@@ -843,7 +845,6 @@ int main(int argc, char **argv)
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning cents: %lf s\n", cpu_time_used);
 
-						if (itree == 86)printf("cp10\n");
 			start=clock();
 			// Compute sfr for satellites
 			if (logM_out > 11.5)
@@ -879,16 +880,6 @@ int main(int argc, char **argv)
 					//	printf("t_merge: %lf\n", t_merge);
 					//
 
-						if (itree == 266685) 
-						{
-							printf("cp5\n");
-							printf("nmw_sat: %d\n", nmw_sat);
-						}
-						if (itree == 86) 
-						{
-							printf("nmw_sat: %d\n", nmw_sat);
-							printf("z_infall: %lf\n", z_infall);
-						}
 						double a = 1.0/(z_infall+1);
 
 						ibin_zt = (int) ((a0 - a)/da);
@@ -909,10 +900,10 @@ int main(int argc, char **argv)
 						//printf("t=%lf Gyr\n", t_Gyr);
 						if (z1_sat <= redshifts_sat1[0] && z1_sat < 6)
 						{
-							int index1=0;
+							int index1=nmw_sat-1; //in final bin
 							for (int iz=1; iz < nmw_sat; iz++)
 							{
-								if (z1_sat < redshifts_sat1[iz])
+								if (z1_sat > redshifts_sat1[iz])
 								{
 									index1 = iz - 1;
 									equals = 0;
@@ -962,7 +953,15 @@ int main(int argc, char **argv)
 		
 							double sfr_sat = dmb_dt * e;
 
-							sfr_sat *= exp(-(t_Gyr)/tau_quench);
+							double t_delay = t_delay0 * pow(1+z_infall, -3.0/2.0); 
+							double exp1 = exp(-(t_Gyr-t_delay)/0.25);
+							//if (exp1 > 1) printf("t_Gyr %lf\n", t_Gyr);
+							//printf("exp: %lf\n", exp(-(t_Gyr-t_delay)/0.25));
+							if (t_Gyr > t_delay)
+							{
+								sfr_sat *= exp(-(t_Gyr-t_delay)/0.25);
+							}
+						//	sfr_sat *= exp(-(t_Gyr)/tau_quench);
 							double logsfr_sat = log10(sfr_sat);
 
 							if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
@@ -988,7 +987,6 @@ int main(int argc, char **argv)
 			}
 
 			//if (yes == 1) count++; printf("itree: %d\n", itree);
-						if (itree == 86)printf("cp9\n");
 		}
 		
 		printf("\n");

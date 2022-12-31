@@ -562,8 +562,9 @@ int main(int argc, char **argv)
 	 
 	/* satellite quenching time */
 	double t_delay0 = 3;
-	double t_delay = t_delay0 * pow(1+zout, -3.0/2.0); 
-	printf("t_delay: %lf", t_delay);
+	//double t_delay = t_delay0 * pow(1+zout, -3.0/2.0); 
+	//printf("t_delay: %lf", t_delay);
+	/*
 	double tau_quench0 = 1.7;
 	printf("tau_quench0: %lf\n", tau_quench0);
 	double tau_quench = tau_quench0*pow(1+zout, -3.0/2.0); // just use zout instead of z_infall for simplicity
@@ -573,10 +574,6 @@ int main(int argc, char **argv)
 	double t_quench = tout - dt_quenched;
 	double z_quench = my_t2z(cosm, tout - dt_quenched); 
 
-	/*
-	ibin_zt = (int) ((t2z_t0 - (t_quench/1e9))/(t2z_dt));
-	double z_quench = lin_interp(t2z_t, t2z_z, t_quench/1e9, ibin_zt);
-	*/
 	printf("\n");
 	printf("z_quench: %lf\n", z_quench);
 
@@ -590,30 +587,29 @@ int main(int argc, char **argv)
 
 	double t1_quench = tout - dt_quenched - tdyn_quench;
 	double z_sat_max = my_t2z(cosm, t1_quench);
+	*/
 
 	//printf("z_sat_max: %lf\n", z_sat_max);
 	/*
 	ibin_zt = (int) ((t2z_t0 - (t1_quench/1e9))/(t2z_dt));
 	double z_sat_max = lin_interp(t2z_t, t2z_z, t1_quench/1e9, ibin_zt);
-	*/
 
 	printf("tdyn_quench: %g\n", tdyn_quench);
 	printf("z_sat_max: %lf\n", z_sat_max);
+	*/
 
+	/*
 	if (z_sat_max > z2t_zmax) 
 	{
 		z_sat_max = z2t_zmax;
 		printf("WARNING: changed z_sat_max to %lf\n", z_sat_max);
-		/*
-		fprintf(stderr, "z_sat_max %lf > max z for conc table! \n", z_sat_max);
-		exit(1);
-		*/
 	}
 	if (z_quench > z_conc_max) 
 	{
 		z_quench = z_conc_max;
 		printf("WARNING: changed z_quench to %lf\n", z_quench);
 	}
+	*/
 
 
 	double sigma_e = 0.2; // std of baryon conversion efficiency
@@ -954,9 +950,6 @@ int main(int argc, char **argv)
 							double sfr_sat = dmb_dt * e;
 
 							double t_delay = t_delay0 * pow(1+z_infall, -3.0/2.0); 
-							double exp1 = exp(-(t_Gyr-t_delay)/0.25);
-							//if (exp1 > 1) printf("t_Gyr %lf\n", t_Gyr);
-							//printf("exp: %lf\n", exp(-(t_Gyr-t_delay)/0.25));
 							if (t_Gyr > t_delay)
 							{
 								sfr_sat *= exp(-(t_Gyr-t_delay)/0.25);

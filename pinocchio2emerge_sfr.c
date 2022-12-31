@@ -664,6 +664,7 @@ int main(int argc, char **argv)
 			double cBN;
 			double r_vir_out;
 			double underestimated = 0;
+			int yes = 0;
 
 			int *sat_nonquench;
 			sat_nonquench = (int*) malloc(nbranch_tree* sizeof(int));
@@ -753,7 +754,7 @@ int main(int argc, char **argv)
 						imw++;
 					}
 				
-					if (logM_out > 11.5 && zmerger <= z_quench)
+					if (logM_out > 11.5) //&& zmerger <= z_quench)
 					{
 						// before merging with main branch
 						sat_nonquench[ibranch] = 1;
@@ -774,7 +775,7 @@ int main(int argc, char **argv)
 					imw_sats[mw]++;
 
 					//for itself
-					if (zmerger <= z_quench)
+					//if (zmerger <= z_quench)
 					{
 						sat_nonquench[ibranch] = 1;
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
@@ -783,10 +784,11 @@ int main(int argc, char **argv)
 					}
 
 				}
-//				else if (logM_out > 11.5) count++; //printf("zmerger: %lf\n", zmerger);
+				else if (logM_out > 11.5) yes=1; //printf("zmerger: %lf\n", zmerger);
 				
 				
 			}
+						if (itree == 86)printf("cp9\n");
 			end = clock();
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("after reading: %lf s\n", cpu_time_used);
@@ -841,15 +843,17 @@ int main(int argc, char **argv)
      			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning cents: %lf s\n", cpu_time_used);
 
+						if (itree == 86)printf("cp10\n");
 			start=clock();
 			// Compute sfr for satellites
 			if (logM_out > 11.5)
 			{
-				count++;
 				fprintf(fp_sfr_sat, "# %lf\n", logM_out);
 				for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
 				{
 					int nmw_sat = imw_sats[ibranch];
+					if (nmw_sat > 1)
+					{
 					double *redshifts_sat1 = redshifts_sat[ibranch];
 					double *masses_sat1 = masses_sat[ibranch];
 
@@ -857,7 +861,8 @@ int main(int argc, char **argv)
 					double M_infall = masses_sat1[nmw_sat-1];
 					
 					double logM_infall = log10(M_infall);
-					if (sat_nonquench[ibranch] == 1 && (logM_infall > 10))
+					//if (nmw_sat > 1 && sat_nonquench[ibranch] == 1 && (logM_infall > 10))
+					if (nmw_sat > 1 && (logM_infall > 10))
 					{
 						
 						//printf("%lf\n", redshifts_sat1[nmw_sat-1]);
@@ -872,6 +877,18 @@ int main(int argc, char **argv)
 						//double t_merge = my_z2t(cosm, z_infall);	
 //						printf("z_infall: %lf\n", z_infall);
 					//	printf("t_merge: %lf\n", t_merge);
+					//
+
+						if (itree == 266685) 
+						{
+							printf("cp5\n");
+							printf("nmw_sat: %d\n", nmw_sat);
+						}
+						if (itree == 86) 
+						{
+							printf("nmw_sat: %d\n", nmw_sat);
+							printf("z_infall: %lf\n", z_infall);
+						}
 						double a = 1.0/(z_infall+1);
 
 						ibin_zt = (int) ((a0 - a)/da);
@@ -890,10 +907,10 @@ int main(int argc, char **argv)
 						double t_Gyr = t/1E9;
 
 						//printf("t=%lf Gyr\n", t_Gyr);
-						if (z1_sat < redshifts_sat1[0])
+						if (z1_sat <= redshifts_sat1[0] && z1_sat < 6)
 						{
-							int index1;
-							for (int iz=0; iz < nmw_sat; iz++)
+							int index1=0;
+							for (int iz=1; iz < nmw_sat; iz++)
 							{
 								if (z1_sat > redshifts_sat1[iz])
 								{
@@ -906,7 +923,7 @@ int main(int argc, char **argv)
 									index1 = iz;
 									equals = 1;
 									break;
-								}
+								}//need to do error check here
 							}
 
 
@@ -931,6 +948,7 @@ int main(int argc, char **argv)
 							double r_vir_infall = mvir2rvir(cosm, M_infall, z_infall, Delta_vir_BN_infall, rho_mean_infall);
 							double rho_vir_infall = rho_nfw(cosm, cBN_sat, M_infall, r_vir_infall, r_vir_infall); // [g/cm3] // depends on conc-mass relation
 							double r_vir_d = mvir2rvir(cosm, Md, z1_sat, Delta_vir_BN_d, rho_mean_d); //[cm]
+						//	double r_vir_d = mvir2rvir(cosm, Md, z1, Delta_vir_BN_d, rho_mean_d); //[cm]
 							
 							double dR_dt_dyn = (r_vir_infall - r_vir_d) / tdyn; // "virial radius" calculated from fof mass
 							double term2 = 4 * M_PI * r_vir_infall*r_vir_infall * rho_vir_infall * dR_dt_dyn / Msun;  
@@ -955,6 +973,7 @@ int main(int argc, char **argv)
 
 					}
 				}
+				}
 				
 			}
 			end = clock();
@@ -968,7 +987,10 @@ int main(int argc, char **argv)
 				fprintf(fp_sfr_sum, "%lf %lf %lf %lf %lf %lf %lf\n", logM_out, pos[0][itree], pos[1][itree], pos[2][itree], cBN, r_vir_out/mpc*cosm.hubble, logsfr);
 			}
 
+			//if (yes == 1) count++; printf("itree: %d\n", itree);
+						if (itree == 86)printf("cp9\n");
 		}
+		
 		printf("\n");
 	}
 	printf("count:%d\n", count);

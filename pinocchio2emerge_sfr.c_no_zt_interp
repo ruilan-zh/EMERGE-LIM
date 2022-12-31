@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
 
 	int irun = 22;
-//	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
+	double pmass = 1.27346 * pow(10,9); // N1024 particle mass [Msun/h]
 //	double pmass = 3.77321 * pow(10,8); // N1536 particle mass [Msun/h]
 //	double pmass = 2.55136 * pow(10,8); // N1750 particle mass [Msun/h]
 //	double pmass = 1.34544 * pow(10,7); // N1400 75Mpc/h
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
 //	double pmass = 6.36966 * 1e8; // N1290 250 Mpc/h (z=1.47, 0.4) - 8part
 
-	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
+//	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
 	//double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
 //	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
@@ -138,11 +138,12 @@ int main(int argc, char **argv)
 
 	char runname[16], filename[256];
 
-	//sprintf(runname, "r000%d", irun);
-	sprintf(runname, "r00000");
+	sprintf(runname, "r000%d", irun);
+//	sprintf(runname, "r00000");
 
 	//char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
-	char dir[128] = "/mnt/data_cat4/moriwaki";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
+//	char dir[128] = "/mnt/data_cat4/moriwaki";
 	
 
 	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
@@ -468,7 +469,7 @@ int main(int argc, char **argv)
 		int counter = 0;
 
 		int imass;
-		for (int itree = 0; itree < ntrees/10; itree++)
+		for (int itree = 0; itree < ntrees; itree++)
 		{
 			if (itree == cp10*counter)
 			{	

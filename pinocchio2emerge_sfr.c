@@ -412,9 +412,12 @@ int main(int argc, char **argv)
 	int First = 1;
 
 
+	char dir_out[32];
+	sprintf(dir_out, "emerge_data");
+
 	FILE *fp_sfr;
 	char fname_sfr[32];
-	sprintf(fname_sfr, "mass-sfr-cent.txt");
+	sprintf(fname_sfr, "%s/mass-sfr-cent.txt", dir_out);
 	fp_sfr = fopen(fname_sfr, "w");
 	if (fp_sfr==NULL)
 	{
@@ -426,7 +429,7 @@ int main(int argc, char **argv)
 
 	FILE *fp_sfr_sat;
 	char fname_sfr_sat[32];
-	sprintf(fname_sfr_sat, "mass-sfr-sat.txt");
+	sprintf(fname_sfr_sat, "%s/mass-sfr-sat.txt", dir_out);
 	fp_sfr_sat = fopen(fname_sfr_sat, "w");
 	if (fp_sfr_sat==NULL)
 	{
@@ -438,7 +441,7 @@ int main(int argc, char **argv)
 
 	FILE *fp_sfr_sum;
 	char fname_sfr_sum[32];
-	sprintf(fname_sfr_sum, "mass-sfr-sum.txt");
+	sprintf(fname_sfr_sum, "%s/mass-sfr-sum.txt", dir_out);
 	fp_sfr_sum = fopen(fname_sfr_sum, "w");
 	if (fp_sfr_sum==NULL)
 	{
@@ -957,7 +960,7 @@ int main(int argc, char **argv)
 						//	sfr_sat *= exp(-(t_Gyr)/tau_quench);
 							double logsfr_sat = log10(sfr_sat);
 
-							if (logsfr_sat > -2) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
+							if (logsfr_sat > -3) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
 						//	if (sfr_sat > 0) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
 							//printf("sfr: %lf\n", logsfr_sat);
 

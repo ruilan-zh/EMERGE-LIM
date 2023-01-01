@@ -3,7 +3,9 @@ import time
 
 start_time = time.time()
 
-sums = np.loadtxt("mass-sfr-cent.txt", unpack=True)
+dir1 = "emerge_data"
+
+sums = np.loadtxt(f"{dir1}/mass-sfr-sat.txt", unpack=True)
 masses,sfrs = sums[0], sums[-1]
 
 dM = 0.2

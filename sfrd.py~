@@ -1,23 +1,39 @@
 import numpy as np
 
-cent = np.loadtxt("mass-sfr-cent.txt", unpack=True)
-sfrsum = np.loadtxt("mass-sfr-sum.txt", unpack=True)
+dir1 = "emerge_data"
 
-mass,sfr = [cent[0], cent[-1]]
-mass1, sfr1 = [sfrsum[0], sfrsum[-1]]
+cents = np.loadtxt(f"{dir1}/mass-sfr-cent.txt",unpack=True)
+sums = np.loadtxt(f"{dir1}/mass-sfr-sum.txt", unpack=True)
+sats= np.loadtxt(f"{dir1}/mass-sfr-sat.txt", unpack=True)
 
-mask = (np.isinf(sfr) == 0) & (np.isnan(sfr) == 0)   #& (sfr > 1)# & (sfr < 1)
-mask1 = (np.isinf(sfr1) == 0) & (np.isnan(sfr1) == 0)  #& (sfr1>1)# & (sfr1<1)  
+mass,sfr_cent = cents[0], cents[-1]
+mass1, sfr_sum = sums[0], sums[-1]
+mass1, sfr_sat = sats[0], sats[-1]
 
+mask_cent = (np.isinf(sfr_cent) == 0) & (np.isnan(sfr_cent) == 0) 
+mask_sum = (np.isinf(sfr_sum) == 0) & (np.isnan(sfr_sum) == 0)  
+mask_sat = (np.isinf(sfr_sat) == 0) & (np.isnan(sfr_sat) == 0)  
 
-sfr_sum = np.sum(10**sfr[mask])
-sfr_sum1 = np.sum(10**sfr1[mask1])
-sfr_sum = sfr_sum1
+sfr_cent_sum = np.sum(10**sfr_cent[mask_cent])
+sfr_sum_sum = np.sum(10**sfr_sum[mask_sum])
+sfr_sat_sum = np.sum(10**sfr_sat[mask_sat])
 boxsize_mpc_h = 250
 boxsize_mpc = boxsize_mpc_h /0.67
 #boxsize_mpc = 1000
 volume = boxsize_mpc**3
-sfrd = sfr_sum/volume
-print(sfr_sum)
-sfrd = np.log10(sfr_sum/volume)
+sfrd_cent = sfr_cent_sum/volume
+sfrd_sum = sfr_sum_sum/volume
+sfrd_sat = sfr_sat_sum/volume
+
+f = open(f"{dir1}/sfrd.txt", "w")
+print("# SFRD logSFRD", file=f)
+sfrd = np.log10(sfrd_sum)
 print(sfrd)
+print("Cent+Sat:", sfrd_sum, sfrd, file=f)
+sfrd = np.log10(sfrd_cent)
+print(sfrd)
+print("Cent:", sfrd_cent, sfrd, file=f)
+sfrd = np.log10(sfrd_sat)
+print(sfrd)
+print("Sat:", sfrd_sat, sfrd, file=f)
+f.close()

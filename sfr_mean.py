@@ -1,0 +1,69 @@
+import numpy as np
+import time
+
+start_time = time.time()
+
+dir1 = "emerge_data"
+halo_types = ["sum", "cent", "sat"]
+
+for halo in halo_types:
+    sums = np.loadtxt(f"{dir1}/mass-sfr-{halo}.txt", unpack=True)
+    masses,sfrs = sums[0], sums[-1]
+
+    dM = 0.2
+    mass_bins = np.arange(8, 15, dM)
+    print(mass_bins)
+    mass_min = mass_bins[0] - dM/2
+
+    sfr_sums = [0]*len(mass_bins)
+    sfr_counts = [0]*len(mass_bins)
+    sfr_alls = [[] for x in range(len(mass_bins))]
+
+    sfr_counts_all = [0]*len(mass_bins)
+
+    for ihalo, mass in enumerate(masses):
+        ibin = int((mass - mass_min) / dM);
+        if ibin == len(mass_bins):
+            ibin = len(mass_bins) -1
+        sfr_counts_all[ibin] += 1
+        if np.isnan(sfrs[ihalo]) == 0 and np.isinf(sfrs[ihalo]) == 0:
+            sfr_sums[ibin] += sfrs[ihalo]
+            sfr_counts[ibin] += 1
+            sfr_alls[ibin].append(sfrs[ihalo])
+
+
+    file_sfr_binned = open(f"{dir1}/mean_sfr_{halo}.txt", "w")
+    file_hod_binned = open(f"{dir1}/hod.txt", "w")
+
+    print("# mass mean sigma", file=file_sfr_binned)
+    print("# mass hod", file=file_hod_binned)
+
+    for ibin, sfr_sum in enumerate(sfr_sums):
+        if sfr_counts[ibin] != 0:
+            print(sfr_sum)
+            sfr_mean = sfr_sum/sfr_counts[ibin]
+            var_sum = 0
+            counts = 0
+            for sfr in sfr_alls[ibin]:
+                var_sum += (sfr - sfr_mean)**2 
+                counts += 1
+            var = var_sum/sfr_counts[ibin]
+            sigma = np.sqrt(var)
+            print(np.round(mass_bins[ibin],1), sfr_mean, sigma, sfr_counts[ibin], file=file_sfr_binned)
+
+            hod = sfr_counts[ibin] / sfr_counts_all[ibin]
+            print(np.round(mass_bins[ibin],1), hod, file=file_hod_binned)
+        else:
+            sfr_mean = -np.inf
+            sigma = 0
+            print(np.round(mass_bins[ibin],1), sfr_mean, sigma, sfr_counts[ibin], file=file_sfr_binned)
+            hod = 0
+            print(np.round(mass_bins[ibin],1), hod, file=file_hod_binned)
+
+    file_sfr_binned.close()
+    file_hod_binned.close()
+
+
+    end_time = time.time()
+
+    print("Time: ", end_time - start_time, "seconds")

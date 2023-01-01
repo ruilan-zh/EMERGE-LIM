@@ -85,9 +85,12 @@ int main(int argc, char *argv[])
 		double deltaz = (1 + z) / spectral_resolution;
 		double zstart = z - deltaz/2;
 
+		char dir1[32];
+		sprintf(dir1, "emerge_data");
+
 		FILE *fp;
 		char fname[128];
-		sprintf(fname, "mass-sfr-cent.txt");
+		sprintf(fname, "%s/mass-sfr-cent.txt", dir1);
 		fp = fopen(fname, "r");
 		if (fp==NULL)
 		{
@@ -97,7 +100,7 @@ int main(int argc, char *argv[])
 	
 		FILE *fp_sat;
 		char fname_sat[128];
-		sprintf(fname_sat, "mass-sfr-sat.txt");
+		sprintf(fname_sat, "%s/mass-sfr-sat.txt", dir1);
 		fp_sat = fopen(fname_sat, "r");
 		if (fp_sat==NULL)
 		{
@@ -228,17 +231,8 @@ int main(int argc, char *argv[])
 		{
 			double old = L_bin[NBIN_L-1];	
 			int ibin = (int) ((L_lines[iline][j] - L_min) / dL);
-//			printf("%lf\n", L_lines[iline][j]);
-//			printf("ibin: %d\n", ibin);
-			/*
-			if (L_bin[NBIN_L-1] != 44.25)
-			{
-	printf("***%lf\n", L_bin[NBIN_L-1]);
-	printf("%d\n", j);
-	break;
-		}
-			*/
-				double new = L_bin[NBIN_L-1];
+			
+			double new = L_bin[NBIN_L-1];
 			if (old != new) printf("old\n");
 
 			if (ibin >= NBIN_L)

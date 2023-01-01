@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	printf("\n");
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 0.4;
+	double zout = 1.5;
 	
 	double Ez_out = E_z(cosm, zout);
 	double rho_mean_out = rho_m(cosm, zout, Ez_out);
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 	//sprintf(runname, "r00000");
 
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.4";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
@@ -957,7 +957,8 @@ int main(int argc, char **argv)
 						//	sfr_sat *= exp(-(t_Gyr)/tau_quench);
 							double logsfr_sat = log10(sfr_sat);
 
-							if (logsfr_sat > -1) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
+							if (logsfr_sat > -2) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
+						//	if (sfr_sat > 0) fprintf(fp_sfr_sat, "%lf %g\n", logM_out, logsfr_sat);
 							//printf("sfr: %lf\n", logsfr_sat);
 
 							if (sfr_sat> 0) sfr += sfr_sat;

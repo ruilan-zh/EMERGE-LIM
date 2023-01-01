@@ -3,7 +3,7 @@ import time
 
 start_time = time.time()
 
-sums = np.loadtxt("mass-sfr-sum.txt", unpack=True)
+sums = np.loadtxt("mass-sfr-sat.txt", unpack=True)
 masses,sfrs = sums[0], sums[-1]
 
 dM = 0.2

@@ -1,9 +1,10 @@
 import numpy as np
 
-boxsize = 250
+h = 0.6736
+boxsize = 250 /h
 
-logMmin = 8
-dlogM = 0.2
+logMmin = 9
+dlogM = 0.3
 logMmax = 15
 nbins = (logMmax - logMmin)/dlogM
 mass_bins = np.arange(logMmin, 15, dlogM)
@@ -12,8 +13,9 @@ sfr_sums = [0]*len(mass_bins)
 sfr_counts = [0]*len(mass_bins)
 tot_counts = [0]*len(mass_bins)
 
-#mass, sfr = np.loadtxt("mass-sfr.txt", unpack=True)
-mass1, sfr1 = np.loadtxt("mass-sfr-sum.txt", unpack=True)
+#mass, sfr = np.loadtxt("mass-sfr-centtxt", unpack=True)
+sums = np.loadtxt("mass-sfr-sum.txt", unpack=True)
+mass1, sfr1 = sums[0], sums[-1]
 
 #mask = (np.isinf(sfr) == 0) & (np.isnan(sfr) == 0) & (mass < 11)
 mask1 = (np.isinf(sfr1) == 0) & (np.isnan(sfr1) == 0)

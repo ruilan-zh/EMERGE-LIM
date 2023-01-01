@@ -11,6 +11,7 @@
 
 #define NBIN_L 100
 #define NLINES 1
+#define NTYPES 3 //halo types
 
 int main(int argc, char *argv[])
 {
@@ -59,7 +60,6 @@ int main(int argc, char *argv[])
 	printf("max logL = %lf\n", L_max);
 	printf("min logL = %lf\n", L_min);
 	double L_mins[NLINES] = {41.8, 42.1,41.9};
-	double L_bin[NBIN_L] = {};
 	double dL = (L_max - L_min) / NBIN_L;
 	printf("%lf\n", dL);
 	double dLs[NLINES];
@@ -67,14 +67,21 @@ int main(int argc, char *argv[])
 	{
 		dLs[iline] = (L_max - L_mins[iline])/NBIN_L;
 	}
-	for (int ibin = 0; ibin < NBIN_L; ibin++) 
-	{
-		//L_bin[ibin] = L_min + (ibin+0.5)*dL;
-		L_bin[ibin] = 0.0;
-		//printf("%lf\n", L_bin[ibin]);
-	}
-	int L[NLINES][NBIN_L] = {};
 
+	double L_bin[NTYPES][NBIN_L] = {};
+	for (int itype = 0; itype < NTYPES; itype++)
+	{
+	for (int ibin = 0; ibin < NBIN_L; ibin++) 
+		{
+			L_bin[itype][ibin] = 0.0;
+		}
+	}
+	int L_cent[NLINES][NBIN_L] = {};
+	int L_sat[NLINES][NBIN_L] = {};
+	int L[NLINES][NTYPES][NBIN_L] = {};
+
+	char dir1[32];
+	sprintf(dir1, "emerge_data");
 
 	for (int iline = 0; iline < NLINES; iline++)
 	{
@@ -85,8 +92,7 @@ int main(int argc, char *argv[])
 		double deltaz = (1 + z) / spectral_resolution;
 		double zstart = z - deltaz/2;
 
-		char dir1[32];
-		sprintf(dir1, "emerge_data");
+	
 
 		FILE *fp;
 		char fname[128];
@@ -134,7 +140,6 @@ int main(int argc, char *argv[])
 		int k = 0;
 
 		int count_cent = 0;
-		/*
 		while(fgets(str, 256, fp) != NULL)
 		{
 			if (i == arrlen)
@@ -172,7 +177,6 @@ int main(int argc, char *argv[])
 			}
 			k++;
 		}
-		*/
 		fclose(fp);
 		printf("%d\n", k);
 	
@@ -229,10 +233,10 @@ int main(int argc, char *argv[])
 
 		for (int j = 0; j < nhalo; j++)
 		{
-			double old = L_bin[NBIN_L-1];	
+			double old = L_bin[0][NBIN_L-1];	
 			int ibin = (int) ((L_lines[iline][j] - L_min) / dL);
 			
-			double new = L_bin[NBIN_L-1];
+			double new = L_bin[0][NBIN_L-1];
 			if (old != new) printf("old\n");
 
 			if (ibin >= NBIN_L)
@@ -247,8 +251,19 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				L[iline][ibin] += 1;
-				L_bin[ibin] += L_lines[iline][j];
+				L[iline][0][ibin] += 1; 
+				L_bin[0][ibin] += L_lines[iline][j]; //bin centre
+
+				if (j < count_cent)
+				{
+					L[iline][1][ibin] += 1; 
+					L_bin[1][ibin] += L_lines[iline][j]; //bin centre
+				}
+				else
+				{
+					L[iline][2][ibin] += 1; 
+					L_bin[2][ibin] += L_lines[iline][j]; //bin centre
+				}
 			}
 		}
 		printf("cp10\n");
@@ -256,8 +271,11 @@ int main(int argc, char *argv[])
 
 		for (int ibin = 0; ibin < NBIN_L; ibin++)
 		{
-			L_bin[ibin] /= L[iline][ibin];
-			printf("%d\n", L[iline][ibin]);
+			for (int itype = 0; itype < NTYPES; itype++)
+			{
+				L_bin[itype][ibin] /= L[iline][itype][ibin];
+			//	printf("%d\n", L[iline][itype][ibin]);
+			}
 		}
 		printf("%d galaxies have logL < logL_min= %lf\n", small_count, L_min);
 		printf("%d galaxies have logL > logL_max= %lf\n", big_count, L_max);
@@ -274,34 +292,39 @@ int main(int argc, char *argv[])
 	linenames_with_noise[NLINES] = "noise";
 
 
+	char *halo_types[NTYPES] = {"all", "cent", "sat"};
 
-	FILE *fp1;
-	char fname1[128];
-	sprintf(fname1, "./luminosity_function_emerge.txt");
-	fp1 = fopen(fname1, "w");
-
-	fprintf(fp1, "# log L [erg/s]");
-	fprintf(fp1, " %-3s (z=%.1f) ", linenames[0], redshifts[0]);
-
-	for (int iline = 1; iline < NLINES; iline++)
+	for (int itype = 0; itype < NTYPES; itype++)
 	{
-		fprintf(fp1, " %-3s (z=%.1f) ", linenames[iline], redshifts[iline]);
-	}
-	//fprintf(fp1, "  %s", linenames_with_noise[NLINES]);
-	fprintf(fp1, "\n");
 
-	for (int ibin = 0; ibin < NBIN_L; ibin++)
-	{
-		fprintf(fp1, "%-15lf ", L_bin[ibin]);
-//		printf("%lf ", L_bin[ibin]);
-		for (int iline = 0; iline < NLINES; iline++)
+		FILE *fp1;
+		char fname1[128];
+		sprintf(fname1, "%s/luminosity_function_emerge_%s.txt", dir1, halo_types[itype]);
+		fp1 = fopen(fname1, "w");
+
+		fprintf(fp1, "# log L [erg/s]");
+		fprintf(fp1, " %-3s (z=%.1f) ", linenames[0], redshifts[0]);
+
+		for (int iline = 1; iline < NLINES; iline++)
 		{
-			fprintf(fp1, "%-13d ", L[iline][ibin]);
+			fprintf(fp1, " %-3s (z=%.1f) ", linenames[iline], redshifts[iline]);
 		}
+		//fprintf(fp1, "  %s", linenames_with_noise[NLINES]);
 		fprintf(fp1, "\n");
-	}
 
-	fclose(fp1);	
+		for (int ibin = 0; ibin < NBIN_L; ibin++)
+		{
+			fprintf(fp1, "%-15lf ", L_bin[itype][ibin]);
+	//		printf("%lf ", L_bin[itype][ibin]);
+			for (int iline = 0; iline < NLINES; iline++)
+			{
+				fprintf(fp1, "%-13d ", L[iline][itype][ibin]);
+			}
+			fprintf(fp1, "\n");
+		}
+
+		fclose(fp1);	
+	}
 
 	
 	time(&now);

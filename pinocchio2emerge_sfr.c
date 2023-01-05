@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	printf("\n");
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 1.5;
+	double zout = 0.4;
 	
 	double Ez_out = E_z(cosm, zout);
 	double rho_mean_out = rho_m(cosm, zout, Ez_out);
@@ -261,7 +261,8 @@ int main(int argc, char **argv)
 	//sprintf(runname, "r00000");
 
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.4";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
@@ -615,7 +616,7 @@ int main(int argc, char **argv)
 	*/
 
 
-	double sigma_e = 0.2; // std of baryon conversion efficiency
+	double sigma_e = 0.25; // std of baryon conversion efficiency
 	int count = 0;
 
 	double start_loop=clock();
@@ -697,6 +698,7 @@ int main(int argc, char **argv)
 			}
 
 			double logM_out;
+			double logMmin_sat = 10;
 
 			start = clock();
 			for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
@@ -756,7 +758,7 @@ int main(int argc, char **argv)
 						imw++;
 					}
 				
-					if (logM_out > 11.5 && zmerger <= z_conc_max)
+					if (logM_out > logMmin_sat && zmerger <= z_conc_max)
 					{
 						// before merging with main branch
 						sat_nonquench[ibranch] = 1;
@@ -766,7 +768,7 @@ int main(int argc, char **argv)
 					}
 
 				}
-				else if (logM_out > 11.5 && zmerger <= z2t_zmax)
+				else if (logM_out > logMmin_sat && zmerger <= z2t_zmax)
 				{
 					
 					//for halo it merges with
@@ -786,7 +788,6 @@ int main(int argc, char **argv)
 					}
 
 				}
-				else if (logM_out > 11.5) yes=1; //printf("zmerger: %lf\n", zmerger);
 				
 				
 			}
@@ -802,7 +803,9 @@ int main(int argc, char **argv)
 			start = clock();
 		
 //			if (imw == 1 && logM_out > 10) count++;
-			if (mw_none == 0) // if we have merger history info 
+
+			double logMmin_out = 10;
+			if (mw_none == 0 && logM_out > logMmin_out) // if we have merger history info 
 			{
 
 				Md = M_dyn(masses, redshifts, index, z1, equals);
@@ -846,7 +849,7 @@ int main(int argc, char **argv)
 
 			start=clock();
 			// Compute sfr for satellites
-			if (logM_out > 11.5)
+			if (logM_out > logMmin_sat)
 			{
 				fprintf(fp_sfr_sat, "# %lf\n", logM_out);
 				for (int ibranch = 0; ibranch < nbranch_tree; ibranch++)
@@ -952,11 +955,42 @@ int main(int argc, char **argv)
 		
 							double sfr_sat = dmb_dt * e;
 
-							double t_delay = t_delay0 * pow(1+z_infall, -3.0/2.0); 
+							double mstar = mhalo2mstar(cosm, M_infall, z_infall);
+							double tau0 = 4.282;
+							double tau_s = 0.363; 
+							//double t_delay = pow(1+z_infall, -3.0/2.0) * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
+							double t_delay = tdyn/1e9 * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
+//							t_delay = 4* pow((mstar/cosm.hubble/1e10),-0.363);
+						//	printf("%lf\n", t_delay);
+
+							double tau_quench = 0.25;
+
+							/*
+							if (logM_infall < 12)
+							{ 
+								t_delay0 = 3.05;
+								tau_quench = 0.16;
+							}
+							else if (logM_infall > 12 && logM_infall < 13)
+							{
+								t_delay0 = 1.54;
+								tau_quench = 0.08;
+							}
+							else 
+							{
+								t_delay0 = 0.75;
+								tau_quench = 0.11;
+							}
+							*/
+							//double t_delay = t_delay0 * pow(1+z_infall, -3.0/2.0); 
+							/*
 							if (t_Gyr > t_delay)
 							{
-								sfr_sat *= exp(-(t_Gyr-t_delay)/0.25);
+								sfr_sat *= exp(-(t_Gyr-t_delay)/tau_quench);
 							}
+							*/
+
+							if (t_Gyr > t_delay) sfr_sat = 0;
 						//	sfr_sat *= exp(-(t_Gyr)/tau_quench);
 							double logsfr_sat = log10(sfr_sat);
 
@@ -976,7 +1010,7 @@ int main(int argc, char **argv)
 			cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 			//printf("assigning sats: %lf s\n", cpu_time_used);
 			
-			if (logM_out > 10 && sfr > 0) 
+			if (logM_out > logMmin_out && sfr > 0) 
 			{
 				double logsfr = log10(sfr);
 				//if (logsfr > -2) fprintf(fp_sfr_sum, "%lf %g\n", logM_out, log10(sfr));
@@ -1413,7 +1447,6 @@ double tau(Cosmology cosm, double M_star_msun_h, double z)
 }
 */
 
-/*
 double mhalo2mstar(Cosmology cosm, double M_halo_msun_h, double z)
 {
 
@@ -1437,10 +1470,9 @@ double mhalo2mstar(Cosmology cosm, double M_halo_msun_h, double z)
 
 	double M1 = pow(10,logM1);
 
-	double m_star = M_halo_msun_h * 2 * N / (pow(M_halo/M1,-beta) + pow(M_halo/M1, gamma));
+	double m_star = M_halo_msun_h * 2 * N / (pow(M_halo/M1,-beta) + pow(M_halo/M1, gamma)); // [Msun/h]
 	return m_star;
 }
-*/
 
 /*
 double sfr2mstar(Cosmology cosm, double sfr, double z)

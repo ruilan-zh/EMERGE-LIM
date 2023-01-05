@@ -1,0 +1,43 @@
+luminosity_function.c:13:0: warning: "NLINES" redefined
+ #define NLINES 1
+ 
+In file included from luminosity_function.c:9:0:
+//mnt/data_cat5/rlzhang/LIM-Pinocchio/para.h:37:0: note: this is the location of the previous definition
+ #define NLINES 3
+ 
+luminosity_function.c: In function ‘main’:
+luminosity_function.c:34:35: warning: excess elements in array initializer
+  char *linenames[NLINES] = {"Ha", "OIII", "OII"};
+                                   ^~~~~~
+luminosity_function.c:34:35: note: (near initialization for ‘linenames’)
+luminosity_function.c:34:43: warning: excess elements in array initializer
+  char *linenames[NLINES] = {"Ha", "OIII", "OII"};
+                                           ^~~~~
+luminosity_function.c:34:43: note: (near initialization for ‘linenames’)
+luminosity_function.c:38:48: warning: excess elements in array initializer
+  double lambda_rest[NLINES] = {lambda_rest_Ha, lambda_rest_O3, lambda_rest_O2};
+                                                ^~~~~~~~~~~~~~
+luminosity_function.c:38:48: note: (near initialization for ‘lambda_rest’)
+luminosity_function.c:38:64: warning: excess elements in array initializer
+  double lambda_rest[NLINES] = {lambda_rest_Ha, lambda_rest_O3, lambda_rest_O2};
+                                                                ^~~~~~~~~~~~~~
+luminosity_function.c:38:64: note: (near initialization for ‘lambda_rest’)
+luminosity_function.c:50:36: warning: excess elements in array initializer
+  double extinction[NLINES] = {1.0, 1.35, 1.0};
+                                    ^~~~
+luminosity_function.c:50:36: note: (near initialization for ‘extinction’)
+luminosity_function.c:50:42: warning: excess elements in array initializer
+  double extinction[NLINES] = {1.0, 1.35, 1.0};
+                                          ^~~
+luminosity_function.c:50:42: note: (near initialization for ‘extinction’)
+luminosity_function.c:62:33: warning: excess elements in array initializer
+  double L_mins[NLINES] = {41.8, 42.1,41.9};
+                                 ^~~~
+luminosity_function.c:62:33: note: (near initialization for ‘L_mins’)
+luminosity_function.c:62:38: warning: excess elements in array initializer
+  double L_mins[NLINES] = {41.8, 42.1,41.9};
+                                      ^~~~
+luminosity_function.c:62:38: note: (near initialization for ‘L_mins’)
+luminosity_function.c:168:17: warning: use of assignment suppression and length modifier together in gnu_scanf format [-Wformat=]
+     sscanf(str, "%*lf %*s %*s %*s %*s %*s %lf ", &L_lines_all[0][i] );
+                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

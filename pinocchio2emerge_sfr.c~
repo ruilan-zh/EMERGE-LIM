@@ -203,8 +203,10 @@ int main(int argc, char **argv)
 
 //	double pmass = 2.93517 * 1e8; // N4500 1 Gpc (z=1.5)
 
-	double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4)
-//	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5)
+//	double pmass = 1.02732 * 1e9; // N1100 250 Mpc/h (z=1.5,0.4, 0.9)
+	double pmass = 3.04392 * 1e8; // N1650 250 Mpc/h (z=1.5,0.4,0.9)
+//	double pmass = 5.06432 * 1e7; // N3000 250 Mpc/h (z=1.5)
+//	double pmass = 1.59183 * 1e8; // N2048 250 Mpc/h (z=0.4)
 
 
 
@@ -216,7 +218,8 @@ int main(int argc, char **argv)
 	printf("\n");
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
-	double zout = 0.4;
+
+	double zout = 1.5;
 	
 	double Ez_out = E_z(cosm, zout);
 	double rho_mean_out = rho_m(cosm, zout, Ez_out);
@@ -260,13 +263,18 @@ int main(int argc, char **argv)
 	sprintf(runname, "r000%d", irun);
 	//sprintf(runname, "r00000");
 
-//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.4";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.4";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.9";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.5/N1024";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char dir[128] = "/mnt/data_cat4/moriwaki";
 	
+//	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N1650/0.4";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N2048/0.4";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N1650/0.9";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N3000/1.5";
 
 	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
 	//char cat_dir[128] = "/mnt/data_cat4/moriwaki";
@@ -565,7 +573,7 @@ int main(int argc, char **argv)
 	printf("z_conc_max: %lf\n", z_conc_max);
 	 
 	/* satellite quenching time */
-	double t_delay0 = 3;
+	double t_delay0 = 4;
 	//double t_delay = t_delay0 * pow(1+zout, -3.0/2.0); 
 	//printf("t_delay: %lf", t_delay);
 	/*
@@ -761,7 +769,7 @@ int main(int argc, char **argv)
 					if (logM_out > logMmin_sat && zmerger <= z_conc_max)
 					{
 						// before merging with main branch
-						sat_nonquench[ibranch] = 1;
+						//sat_nonquench[ibranch] = 1;
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
 						masses_sat[ibranch][imw_sats[ibranch]] = m1;
 						imw_sats[ibranch] ++;
@@ -781,7 +789,7 @@ int main(int argc, char **argv)
 					//for itself
 					if (zmerger <= z_conc_max)
 					{
-						sat_nonquench[ibranch] = 1;
+						//sat_nonquench[ibranch] = 1;
 						redshifts_sat[ibranch][imw_sats[ibranch]] = zmerger;
 						masses_sat[ibranch][imw_sats[ibranch]] = m1;
 						imw_sats[ibranch]++;
@@ -955,38 +963,47 @@ int main(int argc, char **argv)
 		
 							double sfr_sat = dmb_dt * e;
 
+							/*
 							double mstar = mhalo2mstar(cosm, M_infall, z_infall);
+							mstar *= 3;
+						*/	
 							double tau0 = 4.282;
 							double tau_s = 0.363; 
-							//double t_delay = pow(1+z_infall, -3.0/2.0) * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
-							double t_delay = tdyn/1e9 * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
-//							t_delay = 4* pow((mstar/cosm.hubble/1e10),-0.363);
-						//	printf("%lf\n", t_delay);
+							
+//							tau0 = 1.7;
+//							tau_s = 0.15;
+							
+
+						//	double t_delay = tdyn/1e9 * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
+							
+
+							double t_delay = tdyn/1e9 * tau0 *  pow(M_infall/cosm.hubble/1e12,-tau_s);
 
 							double tau_quench = 0.25;
+							/*
+							//tau_quench = 0.2 *  pow(mstar/cosm.hubble/1e11,-0.5);
+							double m = -0.43;
+							double c = 4.94;
+							double x = log10(mstar/cosm.hubble);
+
+							tau_quench = m*x + c;
+							*/
+
+						
+						//	double t_delay = t_delay0 * pow(1+z_infall, -3.0/2.0); 
 
 							/*
-							if (logM_infall < 12)
-							{ 
-								t_delay0 = 3.05;
-								tau_quench = 0.16;
-							}
-							else if (logM_infall > 12 && logM_infall < 13)
-							{
-								t_delay0 = 1.54;
-								tau_quench = 0.08;
-							}
-							else 
-							{
-								t_delay0 = 0.75;
-								tau_quench = 0.11;
-							}
+							double tfactor = 3; 
+							double t_delay = tfactor * tdyn/1e9;
 							*/
-							//double t_delay = t_delay0 * pow(1+z_infall, -3.0/2.0); 
+							
+							
 							if (t_Gyr > t_delay)
 							{
 								sfr_sat *= exp(-(t_Gyr-t_delay)/tau_quench);
 							}
+							
+							
 
 						//	if (t_Gyr > t_delay) sfr_sat = 0;
 						//	sfr_sat *= exp(-(t_Gyr)/tau_quench);
@@ -1447,6 +1464,7 @@ double tau(Cosmology cosm, double M_star_msun_h, double z)
 
 double mhalo2mstar(Cosmology cosm, double M_halo_msun_h, double z)
 {
+	// Moster et al. 2012 eq. 2, table 1
 
 	double M_halo = M_halo_msun_h/cosm.hubble; //[Msun]
 

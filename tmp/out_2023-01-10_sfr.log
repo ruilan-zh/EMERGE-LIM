@@ -1,4 +1,4 @@
-Tue Jan 10 01:47:45 2023
+Tue Jan 10 20:57:39 2023
 
 Opening file t2z_planck18only.txt
 nbins_zt: 138
@@ -19,19 +19,19 @@ z2t_t0: 13.795460
 da: 0.007070
 
 Min halo mass: 9.483433
-tdyn: 6.73499e+08 years
-zout: 1.500000
-tout: 4.26064e+09 years
-tout - tdyn: 3.58714e+09 years
-z(tout - tdyn): 1.815321
+tdyn: 9.79437e+08 years
+zout: 0.900000
+tout: 6.27022e+09 years
+tout - tdyn: 5.29078e+09 years
+z(tout - tdyn): 1.146265
 
-Opening file /mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part/pinocchio.1.5000.r00022.catalog.out
-The file has been written by 60 tasks
+Opening file /mnt/data_cat5/rlzhang/cosma/N1650/0.9/pinocchio.0.9000.r00022.catalog.out
+The file has been written by 84 tasks
 The box has been fragmented in 1 slices
-nhalo in cat: 13265696
-time taken to read cat: 3.576130 s
+nhalo in cat: 1682678
+time taken to read cat: 0.499486 s
 
-Opening file /mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part/pinocchio.r00022.histories.out
+Opening file /mnt/data_cat5/rlzhang/cosma/N1650/0.9/pinocchio.r00022.histories.out
 The run used 1 slices
 Opening file conc_diemer.txt
 nbins_m: 61
@@ -47,11 +47,11 @@ zmin for conc table: 0.400000
 dz: 0.100000
 z_conc_max: 6.000000
 
-Ntrees: 13265696
-Nbranches: 26969929
+Ntrees: 1682678
+Nbranches: 29317838
 ...........
 count:0
-I found 13265696 trees and 26969929 branches in the file
-time taken to loop through merger trees and assign sfrs: 73.611370 s
-Tue Jan 10 01:49:06 2023
+I found 1682678 trees and 29317838 branches in the file
+time taken to loop through merger trees and assign sfrs: 84.206279 s
+Tue Jan 10 21:00:36 2023
 

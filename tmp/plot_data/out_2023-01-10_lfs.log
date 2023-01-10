@@ -4,20 +4,20 @@ gcc -I//mnt/data_cat5/rlzhang/LIM-Pinocchio -I//home/rlzhang/local/include  -c l
 gcc -I//mnt/data_cat5/rlzhang/LIM-Pinocchio -I//home/rlzhang/local/include   luminosity_function.o  -lm -L//mnt/data_cat5/rlzhang/LIM-Pinocchio -lmylim -L//home/rlzhang/local/lib -lgsl -lgslcblas  -o luminosity_function
 
 
-Tue Jan 10 01:49:14 2023
+Tue Jan 10 21:00:48 2023
 
 max logL = 3.000000
 min logL = -4.000000
 0.070000
-1917423
-number of central subhaloes in box: 1917423
-Tue Jan 10 01:49:16 2023
+1111075
+number of central subhaloes in box: 1111075
+Tue Jan 10 21:00:50 2023
 
-3333500
-number of satellite subhaloes in box: 1416077
-total number of subhalos: 3333500
+2463333
+number of satellite subhaloes in box: 1352258
+total number of subhalos: 2463333
 cp10
-34590 galaxies have logL < logL_min= -4.000000
+13525 galaxies have logL < logL_min= -4.000000
 0 galaxies have logL > logL_max= 3.000000
-Tue Jan 10 01:49:17 2023
+Tue Jan 10 21:00:51 2023
 

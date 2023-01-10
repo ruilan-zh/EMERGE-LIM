@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 	printf("Min halo mass: %lf\n", log10(min_hmass));
 
 
-	double zout = 1.5;
+	double zout = 0.9;
 	
 	double Ez_out = E_z(cosm, zout);
 	double rho_mean_out = rho_m(cosm, zout, Ez_out);
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
 	sprintf(runname, "r000%d", irun);
 	//sprintf(runname, "r00000");
 
-	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
+//	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio-minmass/test/output/tests22/N1650/1.5/10part";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.4";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/N1100/0.9";
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 	
 //	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N1650/0.4";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N2048/0.4";
-//	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N1650/0.9";
+	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N1650/0.9";
 //	char dir[128] = "/mnt/data_cat5/rlzhang/cosma/N3000/1.5";
 
 	//char cat_dir[128] = "/mnt/data_cat5/rlzhang/Pinocchio/test/output/tests22/1.47/N1290";
@@ -963,22 +963,39 @@ int main(int argc, char **argv)
 		
 							double sfr_sat = dmb_dt * e;
 
-							/*
+							
+							//printf("logsfr_sat: %lf\n", log10(sfr_sat));
+							//printf("t: %lf\n", t_Gyr);
 							double mstar = mhalo2mstar(cosm, M_infall, z_infall);
-							mstar *= 3;
-						*/	
+							
 							double tau0 = 4.282;
 							double tau_s = 0.363; 
 							
-//							tau0 = 1.7;
-//							tau_s = 0.15;
+							tau0 = 1.7;
+							tau_s = 0.15;
 							
 
-						//	double t_delay = tdyn/1e9 * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
+							//double t_delay = tdyn/1e9 * tau0 *  pow(mstar/cosm.hubble/1e10,-tau_s);
 							
 
-							double t_delay = tdyn/1e9 * tau0 *  pow(M_infall/cosm.hubble/1e12,-tau_s);
+						//	double t_delay = tdyn/1e9 * tau0 *  pow(M_infall/cosm.hubble/1e12,-tau_s);
 
+							double logMstar = log10(mstar/cosm.hubble); // [Msun]
+
+
+							double A = 3.5;
+							double var = 5;
+							double shift = 11.1;
+						//	printf("logMstar: %lf\n", logMstar);
+							double t_delay = A * exp(-var*(logMstar-shift)) / (1 + exp(-var*(logMstar-shift))); 
+
+							if (t_delay < 1) t_delay = 1;
+
+							if (logMstar < 9) t_delay = 2;
+//							printf("t_delay: %lf\n", t_delay);
+
+							//printf("t_delay: %lf\n", t_delay);
+							t_delay = t_delay * pow(1+z_infall, -3.0/2.0); 
 							double tau_quench = 0.25;
 							/*
 							//tau_quench = 0.2 *  pow(mstar/cosm.hubble/1e11,-0.5);
@@ -996,11 +1013,15 @@ int main(int argc, char **argv)
 							double tfactor = 3; 
 							double t_delay = tfactor * tdyn/1e9;
 							*/
+
+							double tau_f = (-0.5*logMstar) + 5.7;
+						//	printf("tau_f: %lf\n", tau_f);
+							if (tau_f < 0.2) tau_f = 0.2;
 							
 							
 							if (t_Gyr > t_delay)
 							{
-								sfr_sat *= exp(-(t_Gyr-t_delay)/tau_quench);
+								sfr_sat *= exp(-(t_Gyr-t_delay)/tau_f);
 							}
 							
 							
